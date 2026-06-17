@@ -1,0 +1,3160 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  color: #202428;
+  background: #eef0f2;
+  --brand-blue: #222428;
+  --brand-blue-dark: #000000;
+  --accent-yellow: #ffdc22;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 82% 12%, rgba(255, 220, 34, 0.12), transparent 24%),
+    linear-gradient(180deg, #f2f3f4 0%, #e7e9eb 46%, #f4f5f6 100%);
+}
+
+.topbar {
+  height: 80px;
+  background: rgba(244, 245, 246, 0.92);
+  border-bottom: 1px solid #d6d9de;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(10px);
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  color: var(--brand-blue);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.logo-divider {
+  color: #b5bbc1;
+}
+
+.logo-sub {
+  color: #111418;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.publisher-logo {
+  height: 34px;
+  max-width: 240px;
+  object-fit: contain;
+}
+
+.topbar .publisher-logo {
+  filter: invert(1);
+}
+
+.footer-publisher-logo {
+  height: 46px;
+  max-width: 190px;
+  object-fit: contain;
+}
+
+.footer-disclaimer {
+  opacity: 0.75;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.language-select {
+  height: 34px;
+  border: 1px solid #cfd4da;
+  border-radius: 4px;
+  background: #fff;
+  color: #202428;
+  padding: 0 28px 0 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tips-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  background: transparent;
+  color: #202428;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tips-btn:hover {
+  border-color: #b9bec4;
+  background: #fff;
+}
+
+.login-header-btn {
+  width: auto;
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 4px;
+  border: none;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.account-btn {
+  width: auto;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 4px;
+  border: 1px solid #d7e0ea;
+  background: #f7f8fa;
+  color: #4f5d6b;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.account-wrap {
+  position: relative;
+}
+
+.account-arrow {
+  color: #8c99a7;
+  font-size: 18px;
+  transform: rotate(180deg);
+  transition: transform 0.2s ease;
+}
+
+.account-arrow.open {
+  transform: rotate(0deg);
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 160px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 30, 45, 0.12);
+  padding: 8px;
+  z-index: 20;
+}
+
+.logout-btn {
+  width: 100%;
+  height: 40px;
+  background: #fff;
+  border: none;
+  color: #3b4650;
+  font-size: 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #f4f6f8;
+}
+
+.container {
+  width: min(1100px, 94vw);
+  margin: 24px auto 24px;
+  flex: 1;
+}
+
+.hero {
+  margin-top: 4px;
+}
+
+.banner-placeholder {
+  height: 150px;
+  border-radius: 16px;
+  border: 1px dashed #b8c4d1;
+  background: #edf3f9;
+  color: #6f7f8e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.mall-banner {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #edf3f9;
+}
+
+.mall-banner:last-child {
+  margin-bottom: 0;
+}
+
+.mall-banner-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.mall-banner-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  font-size: 18px;
+  color: #4f5d6b;
+}
+
+.game-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.game-icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #5b8def 0%, #6c5ce7 100%);
+  border-radius: 16px;
+}
+
+.role-game-icon .game-icon-fallback {
+  font-size: 18px;
+  border-radius: 10px;
+}
+
+.footer-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.footer-link-btn:hover {
+  color: var(--brand-blue);
+}
+
+/* 未登录态 */
+.login-panel {
+  margin-top: 18px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px 24px 40px;
+  text-align: center;
+  border: 1px solid #e8ebef;
+}
+
+.game-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eef6fb, #dceef8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+}
+
+.game-title {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.login-main-btn {
+  width: min(360px, 100%);
+  height: 48px;
+  border: none;
+  border-radius: 24px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.login-main-btn:hover {
+  background: var(--brand-blue-dark);
+}
+
+.login-demo-block {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px dashed #e3e8ee;
+  text-align: left;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-demo-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #8b94a0;
+  text-align: center;
+}
+
+.login-demo-card {
+  width: 100%;
+  display: block;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  background: #fafbfc;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.login-demo-card:hover {
+  border-color: #c5d0dc;
+  background: #f4f7fa;
+}
+
+.login-demo-card.locked {
+  border-color: #f0d4d0;
+  background: #fffaf9;
+}
+
+.login-demo-card.locked:hover {
+  border-color: #e8b4ad;
+}
+
+.login-demo-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #e8eaed;
+  color: #5c6670;
+}
+
+.login-demo-badge.unlocked {
+  background: #e6f4ea;
+  color: #2e7d4a;
+}
+
+.login-demo-card.locked .login-demo-badge {
+  background: #fde8e5;
+  color: #c45a4a;
+}
+
+.login-demo-card.banned {
+  border-color: #e0d4f0;
+  background: #faf8fc;
+}
+
+.login-demo-card.banned:hover {
+  border-color: #c9b8e8;
+}
+
+.login-demo-badge.banned {
+  background: #efe6fa;
+  color: #6b4c9a;
+}
+
+.login-demo-chip.banned {
+  border-color: #e0d4f0;
+  background: #f8f5fc;
+  color: #6b4c9a;
+}
+
+.login-demo-phone {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2328;
+  letter-spacing: 0.5px;
+}
+
+.login-demo-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8b94a0;
+  line-height: 1.4;
+}
+
+.login-demo-subtitle {
+  margin: 16px 0 10px;
+  font-size: 12px;
+  color: #9aa3ad;
+  text-align: center;
+}
+
+.login-demo-card.age-blocked {
+  border-color: #f5d0c8;
+  background: #fff8f6;
+}
+
+.login-demo-card.age-limited {
+  border-color: #ffe8c2;
+  background: #fffbf3;
+}
+
+.login-demo-badge.age-blocked {
+  background: #fde8e5;
+  color: #b45309;
+}
+
+.login-demo-badge.age-limited {
+  background: #fff3d6;
+  color: #b45309;
+}
+
+.login-demo-chip.age-blocked {
+  border-color: #f5d0c8;
+  background: #fff8f6;
+  color: #b45309;
+}
+
+.login-demo-chip.age-limited {
+  border-color: #ffe8c2;
+  background: #fffbf3;
+  color: #b45309;
+}
+
+.recharge-limit-banner {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid #ffe8c2;
+  background: #fffbf3;
+  text-align: left;
+}
+
+.recharge-limit-banner.is-blocked {
+  border-color: #f5d0c8;
+  background: #fff5f3;
+}
+
+.recharge-limit-banner.is-limited {
+  border-color: #ffe8c2;
+  background: #fffbf3;
+}
+
+.recharge-limit-banner-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.recharge-limit-banner.is-blocked .recharge-limit-banner-title {
+  color: #c45a4a;
+}
+
+.recharge-limit-banner-text {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5c6670;
+}
+
+.recharge-limit-rules {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #6d7781;
+  line-height: 1.6;
+}
+
+.recharge-limit-contact {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #6d7781;
+  line-height: 1.6;
+}
+
+.recharge-limit-blocked-tip {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c45a4a;
+}
+
+.goods-unavailable-banner.is-age-limit {
+  background: rgba(180, 83, 9, 0.92);
+}
+
+.goods-card.is-age-limited .goods-price-bar {
+  opacity: 0.65;
+}
+
+.qty-age-limit-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #c45a4a;
+  line-height: 1.4;
+}
+
+.age-limit-modal h3 {
+  color: #b45309;
+}
+
+.modal-text.muted {
+  color: #8b94a0;
+  font-size: 13px;
+}
+
+.login-demo-inline {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f2f5;
+}
+
+.login-demo-inline-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #9aa3ad;
+}
+
+.login-demo-chip {
+  width: auto;
+  height: 30px;
+  margin: 0 8px 8px 0;
+  padding: 0 12px;
+  border-radius: 15px;
+  border: 1px solid #dce3eb;
+  background: #f7f9fb;
+  font-size: 12px;
+  color: #4f5d6b;
+  cursor: pointer;
+}
+
+.login-demo-chip.locked {
+  border-color: #f0d4d0;
+  background: #fff5f4;
+  color: #b84a3d;
+}
+
+.login-hint {
+  margin: 14px 0 0;
+  color: #8b94a0;
+  font-size: 14px;
+}
+
+.role-info-card {
+  margin-top: 18px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7ea;
+  padding: 16px 18px;
+}
+
+.role-info-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.role-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.role-game-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eef6fb, #dceef8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.role-game-label {
+  margin: 0;
+  font-size: 12px;
+  color: #8b94a0;
+}
+
+.role-game-name {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.switch-account-btn {
+  width: auto;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 4px;
+  border: 1px solid #c8cdd3;
+  background: #fff;
+  color: #202428;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.switch-account-btn:hover {
+  border-color: #202428;
+}
+
+.role-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.role-info-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  padding: 14px 0 4px;
+}
+
+.role-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-info-label {
+  font-size: 12px;
+  color: #8b94a0;
+}
+
+.role-info-value {
+  font-size: 15px;
+  color: #1f2328;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.goods-panel {
+  margin-top: 18px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 12px 18px;
+  border: 1px solid #e5e7ea;
+}
+
+.goods-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 10px;
+}
+
+.goods-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.small-link {
+  width: auto;
+  height: auto;
+  border: none;
+  background: transparent;
+  color: #878d96;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.goods-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tab-btn {
+  width: auto;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d6d9de;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+  color: #3b4650;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #232427;
+  color: #fff;
+  border-color: #232427;
+}
+
+.goods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.goods-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e3e6eb;
+  border-radius: 4px;
+  padding: 10px 8px 0;
+  background: #fff;
+  position: relative;
+  overflow: visible;
+  min-height: 280px;
+}
+
+.goods-promo-tag {
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  z-index: 2;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 3px;
+  background: #ffd6e0;
+  color: #8a3040;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.goods-time-limit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 10px;
+  background: #e8f3fc;
+  color: #3a6ea5;
+}
+
+.goods-icon-area {
+  position: relative;
+  margin: 8px 0 10px;
+  flex-shrink: 0;
+}
+
+.goods-image {
+  height: 128px;
+  background: linear-gradient(135deg, #f8f3e8, #efe6d6);
+  color: #6f7d8c;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  overflow: hidden;
+}
+
+.goods-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.goods-unavailable-banner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #8a3d3d;
+  background: rgba(255, 214, 214, 0.92);
+  border-top: 1px solid #f0bcbc;
+  border-bottom: 1px solid #f0bcbc;
+  z-index: 1;
+}
+
+.goods-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 10px;
+  text-align: center;
+}
+
+.goods-limit-info {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #3a6ea5;
+  background: #eef6fc;
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+.goods-display-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2328;
+  line-height: 1.35;
+}
+
+.goods-price-bar {
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  min-height: 40px;
+  border: none;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(180deg, #fff4c4, #ffe88a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.price-current {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2328;
+}
+
+.price-original {
+  font-size: 13px;
+  color: #8b7a50;
+  text-decoration: line-through;
+}
+
+.price-sold-out {
+  font-size: 15px;
+  font-weight: 600;
+  color: #9aa3ad;
+}
+
+.goods-card.is-sold-out {
+  background: #f3f4f6;
+  border-color: #dfe3e8;
+}
+
+.goods-card.is-sold-out .goods-image {
+  filter: grayscale(1);
+  opacity: 0.5;
+  background: linear-gradient(135deg, #e8eaed, #dde1e6);
+}
+
+.goods-card.is-sold-out .goods-display-name {
+  color: #9aa3ad;
+}
+
+.goods-card.is-sold-out .goods-limit-info {
+  background: #e8eaed;
+  color: #7a8490;
+}
+
+.goods-card.is-sold-out .goods-price-bar {
+  background: linear-gradient(180deg, #eceef1, #dfe3e8);
+  cursor: not-allowed;
+}
+
+.goods-panel.locked {
+  position: relative;
+  min-height: 320px;
+}
+
+.mall-locked-placeholder {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9aa3ad;
+  gap: 10px;
+}
+
+.mall-locked-icon {
+  font-size: 56px;
+  opacity: 0.35;
+}
+
+.mall-locked-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.mall-loading {
+  margin: 24px 0;
+  text-align: center;
+  color: #7f8893;
+  font-size: 14px;
+}
+
+.store-locked-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.store-locked-modal {
+  width: min(420px, 90%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  padding: 36px 28px 28px;
+  text-align: center;
+}
+
+.store-locked-text {
+  margin: 0 0 28px;
+  font-size: 18px;
+  color: #2a3038;
+  line-height: 1.5;
+}
+
+.store-locked-confirm {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  border: none;
+  border-radius: 6px;
+  background: #e85d4f;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.goods-panel.banned {
+  position: relative;
+  min-height: 320px;
+}
+
+.mall-banned-placeholder {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9aa3ad;
+  gap: 10px;
+}
+
+.mall-banned-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.mall-banned-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ban-modal-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+  padding: 16px;
+}
+
+.ban-modal {
+  width: min(440px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+  padding: 28px 24px 22px;
+  text-align: center;
+  border: 1px solid #eceef1;
+}
+
+.ban-modal-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.ban-modal-reason {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4f5d6b;
+  text-align: left;
+}
+
+.ban-modal-meta {
+  margin: 0 0 22px;
+  font-size: 13px;
+  color: #8b94a0;
+  text-align: left;
+}
+
+.ban-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ban-modal-cs {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 6px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.ban-modal-cs:hover {
+  background: var(--brand-blue-dark);
+}
+
+.ban-modal-confirm {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d7e0ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #5f6973;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #e7fbff;
+  color: #0b6c8a;
+}
+
+.site-footer {
+  margin-top: auto;
+  background: #1f2225;
+  color: #8e959d;
+  padding: 36px 0 32px;
+}
+
+.footer-inner {
+  width: min(1100px, 94vw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #d8dde3;
+}
+
+.brand-mark {
+  width: 56px;
+  height: 56px;
+  border: 1px solid #70767d;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.brand-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.brand-en {
+  margin: 2px 0 0;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.footer-meta p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.footer-links {
+  color: #d8dde3;
+}
+
+/* 弹窗通用 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 100;
+}
+
+.login-mask {
+  align-items: flex-end;
+}
+
+.modal-card {
+  width: min(760px, 95vw);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 26px 30px 22px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #b5bcc5;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-card h3 {
+  margin: 0 0 18px;
+  font-size: 28px;
+}
+
+.modal-subtitle {
+  margin: 0 0 8px;
+  color: #616b75;
+  font-weight: 600;
+}
+
+.modal-text {
+  margin: 0 0 20px;
+  color: #4f5d6b;
+  line-height: 1.7;
+}
+
+.recharge-tips-html {
+  color: #4f5d6b;
+  line-height: 1.7;
+}
+
+.recharge-tips-html h4 {
+  margin: 0 0 8px;
+  color: #616b75;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.recharge-tips-html p {
+  margin: 0 0 20px;
+}
+
+.recharge-tips-html p:last-child,
+.recharge-tips-html ul:last-child {
+  margin-bottom: 0;
+}
+
+.recharge-tips-html ul {
+  margin: 0 0 20px;
+  padding-left: 18px;
+}
+
+.recharge-tips-html a {
+  color: #3a6ea5;
+}
+
+.modal-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #4f5d6b;
+  line-height: 1.8;
+}
+
+.modal-footer {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-confirm {
+  width: 110px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--brand-blue);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* 登录弹框 */
+.login-modal {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 20px 24px 28px;
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.login-modal h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-brand-name {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.login-brand-slogan {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #8b94a0;
+  letter-spacing: 1px;
+}
+
+.login-tabs {
+  display: flex;
+  border-bottom: 1px solid #eceef1;
+  margin-bottom: 18px;
+}
+
+.login-tab {
+  flex: 1;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: #6d7781;
+  font-size: 15px;
+  cursor: pointer;
+  position: relative;
+}
+
+.login-tab.active {
+  color: #1f2328;
+  font-weight: 600;
+}
+
+.login-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand-blue);
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+}
+
+.phone-row,
+.code-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d7dee8;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.phone-row .prefix {
+  padding: 0 12px;
+  color: #4f5d6b;
+  border-right: 1px solid #e8ebef;
+  white-space: nowrap;
+}
+
+.phone-row input,
+.code-row input {
+  flex: 1;
+  height: 46px;
+  border: none;
+  padding: 0 12px;
+  font-size: 15px;
+  outline: none;
+}
+
+.phone-row.single {
+  padding: 0;
+}
+
+.code-row input {
+  border-right: 1px solid #e8ebef;
+}
+
+.code-btn {
+  width: auto;
+  min-width: 110px;
+  height: 46px;
+  border: none;
+  background: #f4f6f8;
+  color: var(--brand-blue);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.agree-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 14px 0;
+  font-size: 12px;
+  color: #6d7781;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.agree-row input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.agree-row a {
+  color: var(--brand-blue);
+  text-decoration: none;
+}
+
+.login-submit-btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 24px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.login-submit-btn:disabled {
+  background: #b8e8f5;
+}
+
+.login-footer-links {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.link-btn {
+  width: auto;
+  height: auto;
+  border: none;
+  background: transparent;
+  color: var(--brand-blue);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* 角色选择 */
+.role-select-mask {
+  background: rgba(0, 0, 0, 0.58);
+  align-items: center;
+}
+
+.role-select-modal {
+  width: min(640px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  background: #f5f6f8;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  position: relative;
+}
+
+.role-select-head {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 10px),
+    #202224;
+  border-bottom: 4px solid var(--accent-yellow);
+}
+
+.role-select-head h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.role-select-game-mark {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent),
+    #f0f2f5;
+}
+
+.role-select-game-title {
+  font-size: 30px;
+  font-weight: 800;
+  color: #222428;
+  letter-spacing: 0;
+}
+
+.role-select-list {
+  display: grid;
+  gap: 12px;
+  padding: 0 28px 22px;
+}
+
+.role-select-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 86px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.role-select-option.active {
+  border-color: #222428;
+  box-shadow: 0 0 0 1px rgba(34, 36, 40, 0.06);
+}
+
+.role-select-option.disabled {
+  color: #a0a7af;
+  background: rgba(255, 255, 255, 0.62);
+  cursor: not-allowed;
+}
+
+.role-select-option input {
+  width: 18px;
+  height: 18px;
+  margin: 4px 0 0;
+  accent-color: #222428;
+  flex-shrink: 0;
+}
+
+.role-select-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.role-select-name {
+  color: #121417;
+  font-size: 18px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.role-select-option.disabled .role-select-name {
+  color: #a0a7af;
+}
+
+.role-select-meta,
+.role-select-default {
+  color: #56616d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.role-select-default {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-radio-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #b9c0c8;
+  display: inline-block;
+}
+
+.role-select-confirm {
+  display: block;
+  width: min(282px, calc(100% - 56px));
+  height: 48px;
+  margin: 2px auto 30px;
+  border: 2px solid #6b6f75;
+  border-radius: 24px;
+  background: #252628;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.role-select-confirm:disabled {
+  background: #9aa1a8;
+}
+
+/* 商品详情 / 收银台 */
+.product-detail h3 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eceef1;
+}
+
+.detail-account {
+  margin-bottom: 12px;
+}
+
+.detail-account p {
+  margin: 0;
+  color: #5f6973;
+}
+
+.detail-game {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2328 !important;
+  margin-bottom: 4px !important;
+}
+
+.product-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #eceef1;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.product-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  background: #eef2f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  overflow: hidden;
+}
+
+.product-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.product-name-row .product-name {
+  margin: 0;
+}
+
+.product-detail-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(90deg, #ff9a4a, #ff6b3d);
+  line-height: 1.4;
+}
+
+.product-promo-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #7f8893;
+  line-height: 1.55;
+}
+
+.product-name {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.product-price {
+  margin: 0;
+  color: #ff644e;
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.product-main {
+  flex: 1;
+}
+
+.product-qty {
+  min-width: 120px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #f2f2f2;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 36px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: #c5cad1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.qty-btn:not(:disabled) {
+  color: #1f2328;
+}
+
+.qty-btn.qty-plus:not(:disabled) {
+  font-weight: 700;
+}
+
+.qty-btn:disabled {
+  cursor: not-allowed;
+}
+
+.qty-value {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.qty-limit-hint {
+  margin: 8px 0 0;
+  color: #8b94a0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.detail-note {
+  margin-top: 12px;
+  border-left: 2px solid #9aa4af;
+  padding-left: 10px;
+}
+
+.detail-note p {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.detail-note ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #616b75;
+}
+
+.detail-footer {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total {
+  margin: 0;
+  color: #1f2328;
+}
+
+.total span {
+  color: #ff644e;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pay-now-btn {
+  width: 180px;
+  height: 42px;
+  border-radius: 0;
+  background: #222428;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.cashier-mask--h5 {
+  align-items: flex-end;
+}
+
+.cashier-mask--pc {
+  align-items: center;
+}
+
+.cashier-card {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 22px 24px 28px;
+  position: relative;
+  text-align: center;
+}
+
+.cashier-card--pc {
+  border-radius: 14px;
+  padding: 24px 28px 28px;
+  width: min(480px, 92vw);
+}
+
+.cashier-card--h5 {
+  border-radius: 16px 16px 0 0;
+}
+
+.cashier-card h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.cashier-amount {
+  margin: 10px 0 6px;
+  color: #ff644e;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.cashier-name {
+  margin: 0;
+  color: #4f5d6b;
+}
+
+/* PC 扫码收银台 */
+.cashier-pc {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.cashier-pc-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  border-bottom: 1px solid #eceef1;
+  margin-bottom: 20px;
+}
+
+.cashier-tab {
+  width: auto;
+  flex: 1;
+  max-width: 160px;
+  height: 40px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #6d7781;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.cashier-tab.active {
+  color: var(--brand-blue);
+  border-bottom-color: var(--brand-blue);
+  font-weight: 600;
+}
+
+.cashier-qr-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.cashier-qr-box {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.cashier-qr-box.channel-wechat {
+  border-color: #c8e6c9;
+}
+
+.cashier-qr-box.channel-alipay {
+  border-color: #bbdefb;
+}
+
+.cashier-qr-pattern {
+  position: absolute;
+  inset: 12px;
+  background-image:
+    linear-gradient(90deg, #1f2328 2px, transparent 2px),
+    linear-gradient(#1f2328 2px, transparent 2px),
+    linear-gradient(90deg, rgba(31, 35, 40, 0.15) 1px, transparent 1px),
+    linear-gradient(rgba(31, 35, 40, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 8px 8px, 8px 8px;
+  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
+  opacity: 0.85;
+}
+
+.cashier-qr-brand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2328;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+}
+
+.cashier-qr-tip {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #4f5d6b;
+}
+
+.cashier-qr-order {
+  margin: 0;
+  font-size: 12px;
+  color: #8b94a0;
+  word-break: break-all;
+}
+
+.paid-btn--pc {
+  margin-top: 18px;
+}
+
+.cashier-retain-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  padding: 16px;
+  border-radius: inherit;
+}
+
+.cashier-retain-card {
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px 20px 18px;
+  text-align: center;
+}
+
+.cashier-retain-card h4 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #1f2328;
+}
+
+.cashier-retain-desc {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #6d7781;
+}
+
+.cashier-retain-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cashier-retain-leave {
+  flex: 1;
+  height: 42px;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #6d7781;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.cashier-retain-stay {
+  flex: 1;
+  height: 42px;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* H5 支付列表 */
+.cashier-h5 {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.cashier-h5-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #6d7781;
+  text-align: left;
+}
+
+.channel-list {
+  margin-top: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.channel-item {
+  width: 100%;
+  height: 52px;
+  border-radius: 10px;
+  border: 1px solid #d7dee8;
+  background: #fff;
+  color: #2f3a45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.channel-item--launch {
+  height: auto;
+  min-height: 64px;
+  padding: 12px 14px;
+}
+
+.channel-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.channel-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.channel-icon--alipay {
+  background: #1677ff;
+}
+
+.channel-icon--wechat {
+  background: #07c160;
+}
+
+.channel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.channel-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.channel-sub {
+  font-size: 12px;
+  color: #8b94a0;
+}
+
+.channel-action {
+  font-size: 14px;
+  color: var(--brand-blue);
+  flex-shrink: 0;
+}
+
+.launch-tip {
+  margin: 12px 0 0;
+  color: #6d7781;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.cashier-mock-panel,
+.pay-landing-mock {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f9fb;
+  border: 1px dashed #d0d8e2;
+  text-align: left;
+}
+
+.pay-landing-mock {
+  margin-top: 28px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cashier-mock-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #8b94a0;
+}
+
+.cashier-mock-btn {
+  width: 100%;
+  height: 36px;
+  margin-bottom: 8px;
+  border: 1px solid #d7dee8;
+  border-radius: 6px;
+  background: #fff;
+  color: #4f5d6b;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cashier-mock-btn:last-child {
+  margin-bottom: 0;
+}
+
+.cashier-mock-btn.success {
+  border-color: #b8e6f5;
+  color: var(--brand-blue);
+}
+
+.cashier-mock-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.h5-pay-flow {
+  padding: 20px 8px 8px;
+  text-align: center;
+}
+
+.h5-pay-spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 16px;
+  border: 3px solid #e8eaed;
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: h5-pay-spin 0.8s linear infinite;
+}
+
+@keyframes h5-pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.h5-pay-flow-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.h5-pay-flow-icon.is-alipay {
+  background: #1677ff;
+}
+
+.h5-pay-flow-icon.is-wechat {
+  background: #07c160;
+}
+
+.h5-pay-flow-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #1f2328;
+}
+
+.h5-pay-flow-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6d7781;
+}
+
+.h5-pay-flow-order {
+  margin-bottom: 18px;
+  padding: 12px;
+  background: #f7f8fa;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6d7781;
+}
+
+.h5-pay-flow-order p {
+  margin: 0;
+}
+
+.h5-pay-flow-amount {
+  margin-top: 6px !important;
+  font-size: 22px !important;
+  font-weight: 700;
+  color: #ff644e !important;
+}
+
+.h5-pay-flow-primary {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #222428;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.h5-pay-flow-ghost {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #fff;
+  color: #6d7781;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.paid-btn {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  background: #222428;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.result-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.result-modal {
+  width: min(360px, 86vw);
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 16px;
+}
+
+.result-modal h4 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.result-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.result-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.result-btn.ghost {
+  background: #fff;
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+}
+
+.result-btn.primary {
+  background: var(--brand-blue);
+  color: #fff;
+  border: none;
+}
+
+/* 支付结果确认 */
+.pay-query-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 250;
+  padding: 20px;
+}
+
+.pay-query-card {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 22px 20px;
+  text-align: center;
+}
+
+.pay-query-card h4 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: #1f2328;
+}
+
+.pay-query-desc {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #6d7781;
+}
+
+.pay-query-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.pay-query-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+}
+
+.pay-query-btn.fail {
+  background: #fff;
+  color: #5f6973;
+  border: 1px solid #d7dee8;
+}
+
+.pay-query-btn.success {
+  background: var(--brand-blue);
+  color: #fff;
+}
+
+.pay-query-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* H5 支付渠道落地页 */
+.pay-landing-page {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.pay-landing-header {
+  height: 48px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.pay-landing-back,
+.pay-landing-more {
+  width: 40px;
+  font-size: 22px;
+  color: #333;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.pay-landing-logo {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pay-landing-logo.alipay {
+  background: #1677ff;
+}
+
+.pay-landing-logo.wechat {
+  background: #07c160;
+}
+
+.pay-landing-main {
+  flex: 1;
+  background: #fff;
+  margin-top: 0;
+  padding: 48px 24px 32px;
+  text-align: center;
+}
+
+.pay-landing-product {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #333;
+}
+
+.pay-landing-amount {
+  margin: 0 0 16px;
+  font-size: 42px;
+  font-weight: 700;
+  color: #111;
+}
+
+.pay-landing-promo {
+  margin: 0 0 32px;
+  font-size: 13px;
+  color: #e65c4f;
+}
+
+.pay-landing-open-app {
+  width: 100%;
+  max-width: 360px;
+  height: 48px;
+  margin: 0 auto 12px;
+  display: block;
+  border: none;
+  border-radius: 6px;
+  background: #1677ff;
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.pay-landing-page.is-wechat .pay-landing-open-app {
+  background: #07c160;
+}
+
+.pay-landing-download {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 28px;
+  display: block;
+  border: none;
+  background: transparent;
+  color: #1677ff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pay-landing-page.is-wechat .pay-landing-download {
+  color: #07c160;
+}
+
+.pay-landing-return {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  display: block;
+  border: none;
+  background: transparent;
+  color: #1677ff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pay-landing-page.is-wechat .pay-landing-return {
+  color: #576b95;
+}
+
+.pay-landing-open-app:disabled,
+.pay-landing-return:disabled {
+  opacity: 0.6;
+}
+
+/* 未查询到支付结果 */
+.pay-no-result-card {
+  width: min(320px, 88vw);
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 22px 22px;
+  text-align: center;
+}
+
+.pay-no-result-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  border: 2px solid #f5a623;
+  color: #f5a623;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 48px;
+}
+
+.pay-no-result-card h4 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #1f2328;
+}
+
+.pay-no-result-desc {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #8b94a0;
+  line-height: 1.5;
+}
+
+.pay-no-result-btn {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* 支付结果页 */
+.pay-result-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 220;
+  padding: 20px;
+}
+
+.pay-result-card {
+  width: min(440px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  text-align: center;
+}
+
+.pay-result-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pay-result-card.is-success .pay-result-icon {
+  background: #22a06b;
+}
+
+.pay-result-card.is-fail .pay-result-icon {
+  background: #e85d4f;
+}
+
+.pay-result-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  color: #1f2328;
+}
+
+.pay-result-subtitle {
+  margin: 0 0 22px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #6d7781;
+}
+
+.pay-result-detail {
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  background: #f7f8fa;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.pay-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.pay-result-row .label {
+  color: #8b94a0;
+  flex-shrink: 0;
+}
+
+.pay-result-row .value {
+  color: #1f2328;
+  text-align: right;
+  word-break: break-all;
+}
+
+.pay-result-row .value.amount {
+  color: #ff644e;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.pay-result-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.pay-result-btn {
+  min-width: 120px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pay-result-btn.ghost {
+  background: #fff;
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+}
+
+.pay-result-btn.primary {
+  background: #222428;
+  color: #fff;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    height: 52px;
+    padding: 0 12px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  .publisher-logo {
+    height: 24px;
+    max-width: 110px;
+  }
+
+  .logo-divider,
+  .logo-sub {
+    display: none;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  .tips-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 12px;
+  }
+
+  .language-select {
+    width: 76px;
+    height: 28px;
+    padding-left: 6px;
+    font-size: 11px;
+  }
+
+  .login-header-btn {
+    height: 28px;
+    padding: 0 14px;
+    font-size: 12px;
+    border-radius: 14px;
+  }
+
+  .account-btn {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+    border-radius: 8px;
+    gap: 4px;
+  }
+
+  .account-arrow {
+    font-size: 12px;
+  }
+
+  .account-menu {
+    width: 118px;
+    top: calc(100% + 4px);
+    padding: 4px;
+  }
+
+  .logout-btn {
+    height: 34px;
+    font-size: 13px;
+    padding: 0 8px;
+  }
+
+  .container {
+    width: calc(100vw - 16px);
+    margin: 8px auto 16px;
+  }
+
+  .banner-placeholder {
+    height: 100px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  .login-panel {
+    margin-top: 10px;
+    padding: 32px 16px 28px;
+    border-radius: 12px;
+  }
+
+  .game-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .game-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .login-main-btn {
+    width: 100%;
+    height: 44px;
+    font-size: 16px;
+    border-radius: 22px;
+  }
+
+  .login-hint {
+    font-size: 12px;
+    margin-top: 10px;
+  }
+
+  .login-demo-block {
+    margin-top: 20px;
+    padding-top: 18px;
+  }
+
+  .login-demo-phone {
+    font-size: 15px;
+  }
+
+  .login-demo-desc {
+    font-size: 11px;
+  }
+
+  .role-info-card {
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .role-info-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .switch-account-btn {
+    width: 100%;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .role-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .role-game-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .role-game-name {
+    font-size: 16px;
+  }
+
+  .role-info-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .role-info-value {
+    font-size: 14px;
+  }
+
+  .account-menu {
+    width: 130px;
+  }
+
+  .goods-panel {
+    margin-top: 8px;
+    border-radius: 10px;
+    padding: 10px 8px 12px;
+  }
+
+  .goods-header h2 {
+    font-size: 14px;
+  }
+
+  .goods-tabs {
+    overflow-x: auto;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    white-space: nowrap;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+    height: 24px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .goods-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .goods-card {
+    padding: 8px 6px 0;
+    min-height: 220px;
+  }
+
+  .goods-promo-tag {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .goods-time-limit {
+    font-size: 10px;
+    top: 6px;
+    right: 6px;
+  }
+
+  .goods-image {
+    height: 88px;
+    font-size: 32px;
+  }
+
+  .goods-unavailable-banner {
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+
+  .goods-limit-info {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .goods-display-name {
+    font-size: 12px;
+  }
+
+  .goods-price-bar {
+    min-height: 34px;
+    width: calc(100% + 12px);
+    margin: 0 -6px;
+  }
+
+  .price-current {
+    font-size: 15px;
+  }
+
+  .price-original {
+    font-size: 11px;
+  }
+
+  .message {
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .site-footer {
+    padding: 20px 0 18px;
+  }
+
+  .footer-inner {
+    width: calc(100vw - 16px);
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .footer-brand {
+    justify-content: center;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .footer-meta {
+    text-align: center;
+  }
+
+  .footer-meta p {
+    font-size: 10px;
+  }
+
+  .modal-mask {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-card {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 14px 20px;
+    max-height: 88vh;
+  }
+
+  .modal-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .modal-close {
+    right: 8px;
+    top: 8px;
+    font-size: 24px;
+  }
+
+  .login-modal {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px 24px;
+  }
+
+  .login-modal h3 {
+    font-size: 18px;
+  }
+
+  .login-brand-name {
+    font-size: 22px;
+  }
+
+  .login-tab {
+    font-size: 14px;
+    height: 36px;
+  }
+
+  .phone-row input,
+  .code-row input {
+    height: 42px;
+    font-size: 14px;
+  }
+
+  .code-btn {
+    min-width: 96px;
+    height: 42px;
+    font-size: 12px;
+  }
+
+  .agree-row {
+    font-size: 11px;
+  }
+
+  .login-submit-btn {
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .login-footer-links {
+    margin-top: 12px;
+  }
+
+  .link-btn {
+    font-size: 12px;
+  }
+
+  .role-select-mask {
+    align-items: flex-end;
+  }
+
+  .role-select-modal {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+  }
+
+  .role-select-head {
+    height: 58px;
+  }
+
+  .role-select-head h3 {
+    font-size: 18px;
+  }
+
+  .role-select-game-mark {
+    min-height: 72px;
+  }
+
+  .role-select-game-title {
+    font-size: 22px;
+  }
+
+  .role-select-list {
+    padding: 0 14px 18px;
+    gap: 10px;
+  }
+
+  .role-select-option {
+    min-height: 78px;
+    padding: 12px;
+  }
+
+  .role-select-name {
+    font-size: 16px;
+  }
+
+  .role-select-confirm {
+    width: calc(100% - 28px);
+    margin-bottom: 20px;
+  }
+
+  .detail-game {
+    font-size: 16px;
+  }
+
+  .product-name {
+    font-size: 14px;
+  }
+
+  .product-promo-text {
+    font-size: 12px;
+  }
+
+  .product-detail-badge {
+    font-size: 11px;
+  }
+
+  .product-price {
+    font-size: 20px;
+  }
+
+  .product-qty {
+    min-width: 86px;
+  }
+
+  .total span {
+    font-size: 22px;
+  }
+
+  .pay-now-btn {
+    width: 120px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .cashier-card--h5 {
+    width: 100%;
+    padding: 16px 14px 24px;
+  }
+
+  .cashier-qr-box {
+    width: 168px;
+    height: 168px;
+  }
+
+  .cashier-amount {
+    font-size: 32px;
+  }
+
+  .channel-item {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .paid-btn {
+    max-width: none;
+    width: 100%;
+    height: 44px;
+  }
+
+  .result-modal h4 {
+    font-size: 16px;
+  }
+
+  .result-btn {
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .pay-query-card {
+    padding: 20px 16px 18px;
+  }
+
+  .pay-query-actions {
+    flex-direction: column;
+  }
+
+  .pay-result-card {
+    padding: 28px 18px 20px;
+  }
+
+  .pay-result-title {
+    font-size: 20px;
+  }
+
+  .pay-result-actions {
+    flex-direction: column;
+  }
+
+  .pay-result-btn {
+    width: 100%;
+  }
+
+  .cashier-retain-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cashier-retain-leave,
+  .cashier-retain-stay {
+    width: 100%;
+  }
+}

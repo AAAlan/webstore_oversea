@@ -1,0 +1,24 @@
+{
+  "name": "web-store",
+  "version": "1.0.0",
+  "description": "国内充值商城 Demo（纯前端 Mock，无需后端）",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev:frontend",
+    "dev:frontend": "vite --config frontend/vite.config.mjs",
+    "dev:admin": "vite --config admin/vite.config.mjs",
+    "build:frontend": "vite build --config frontend/vite.config.mjs",
+    "build:admin": "VITE_ADMIN_BASE=/admin/ vite build --config admin/vite.config.mjs",
+    "build:demo": "npm run build:frontend && npm run build:admin && node scripts/assemble-demo.mjs",
+    "preview:demo": "node scripts/preview-demo.mjs",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "vue": "^3.5.35"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "vite": "^5.4.21"
+  }
+}
