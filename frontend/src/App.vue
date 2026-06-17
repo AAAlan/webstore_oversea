@@ -592,7 +592,7 @@ const payResultFailMessage = ref("");
 const selectedProduct = ref(null);
 const draftSelectedRole = ref("");
 const purchaseQty = ref(1);
-const payChannel = ref("card");
+const payChannel = ref("alipay");
 const hasLaunchedPayApp = ref(false);
 const isMobileH5 = ref(false);
 const payOrderNo = ref("");
@@ -600,14 +600,6 @@ const pendingOrderId = ref("");
 const showPayLanding = ref(false);
 const showPayNoResult = ref(false);
 const PAY_SESSION_KEY = "le_pay_session";
-
-const paymentMethods = [
-  { value: "card", label: "Credit / Debit Card", icon: "◫" },
-  { value: "kr-card", label: "South Korea-issued cards", icon: "◈" },
-  { value: "paypal", label: "PayPal", icon: "P" },
-  { value: "alipay-hk", label: "Alipay HK", icon: "支", recommended: true },
-  { value: "apple-pay", label: "Apple Pay", icon: "" },
-];
 
 const loginMode = ref("sms");
 const loginPhone = ref("");
@@ -1197,16 +1189,7 @@ function retryPayment() {
 }
 
 function payChannelLabel(channel = payChannel.value) {
-  const map = {
-    card: "Credit / Debit Card",
-    "kr-card": "South Korea-issued cards",
-    paypal: "PayPal",
-    "alipay-hk": "Alipay HK",
-    "apple-pay": "Apple Pay",
-    wechat: "微信支付",
-    alipay: "支付宝支付",
-  };
-  return map[channel] ?? "支付方式";
+  return channel === "wechat" ? "微信支付" : "支付宝支付";
 }
 
 async function processPaymentSuccess() {
@@ -1453,7 +1436,7 @@ function payNow() {
     return;
   }
   showProductDetail.value = false;
-  payChannel.value = "card";
+  payChannel.value = isMobileH5.value ? "alipay" : "wechat";
   resetH5PayFlow();
   payOrderNo.value = `LE${Date.now()}`;
   showCashier.value = true;
@@ -2266,61 +2249,130 @@ onBeforeUnmount(() => {
       </section>
     </div>
 
-    <!-- 收银台 -->
+    <!-- 收银台：PC 扫码 / H5 拉起 App -->
     <div
       v-if="showCashier"
       class="modal-mask cashier-mask"
+      :class="isMobileH5 ? 'cashier-mask--h5' : 'cashier-mask--pc'"
       @click.self="requestCloseCashier"
     >
-      <section class="cashier-card">
+      <section class="cashier-card" :class="isMobileH5 ? 'cashier-card--h5' : 'cashier-card--pc'">
         <button class="modal-close" type="button" @click="requestCloseCashier">×</button>
         <h3>收银台</h3>
-        <div class="cashier-layout">
-          <div class="cashier-main">
-            <h4 class="cashier-section-title">选择支付方式</h4>
-            <p class="cashier-section-hint">请选择一种支付方式完成订单。</p>
-            <div class="payment-method-list">
-              <button
-                v-for="method in paymentMethods"
-                :key="method.value"
-                type="button"
-                class="payment-method-item"
-                :class="{ active: payChannel === method.value, recommended: method.recommended }"
-                @click="payChannel = method.value"
-              >
-                <span v-if="method.recommended" class="payment-method-badge">推荐</span>
-                <span class="payment-method-icon">{{ method.icon }}</span>
-                <span class="payment-method-name">{{ method.label }}</span>
-                <span class="payment-method-radio" aria-hidden="true"></span>
+        <p v-if="selectedProduct" class="cashier-amount">￥{{ detailTotalAmount.toFixed(2) }}</p>
+        <p v-if="selectedProduct" class="cashier-name">{{ selectedProduct.name }}</p>
+
+        <!-- PC Web：扫码支付 -->
+        <div v-if="!isMobileH5" class="cashier-pc">
+          <div class="cashier-pc-tabs">
+            <button
+              type="button"
+              :class="['cashier-tab', { active: payChannel === 'wechat' }]"
+              @click="selectPcPayChannel('wechat')"
+            >
+              微信支付
+            </button>
+            <button
+              type="button"
+              :class="['cashier-tab', { active: payChannel === 'alipay' }]"
+              @click="selectPcPayChannel('alipay')"
+            >
+              支付宝支付
+            </button>
+          </div>
+
+          <div class="cashier-qr-panel">
+            <div class="cashier-qr-box" :class="`channel-${payChannel}`">
+              <div class="cashier-qr-pattern" aria-hidden="true"></div>
+              <span class="cashier-qr-brand">{{ payChannel === "wechat" ? "微信" : "支付宝" }}</span>
+            </div>
+            <p class="cashier-qr-tip">
+              请使用{{ payChannel === "wechat" ? "微信" : "支付宝" }}扫一扫完成支付
+            </p>
+            <p class="cashier-qr-order">订单号：{{ payOrderNo }}</p>
+          </div>
+
+          <button class="paid-btn paid-btn--pc" type="button" :disabled="creating" @click="openPcPayConfirm">
+            我已完成支付
+          </button>
+        </div>
+
+        <!-- 移动端 H5：选择支付方式 → 跳转渠道落地页 -->
+        <div v-else class="cashier-h5">
+          <p class="cashier-h5-title">选择支付方式</p>
+          <div class="channel-list">
+            <button type="button" class="channel-item channel-item--launch" @click="openPayLanding('alipay')">
+              <span class="channel-main">
+                <span class="channel-icon channel-icon--alipay">支</span>
+                <span class="channel-text">
+                  <span class="channel-name">支付宝</span>
+                  <span class="channel-sub">推荐有支付宝客户端的用户使用</span>
+                </span>
+              </span>
+              <span class="channel-action">去支付</span>
+            </button>
+            <button type="button" class="channel-item channel-item--launch" @click="openPayLanding('wechat')">
+              <span class="channel-main">
+                <span class="channel-icon channel-icon--wechat">微</span>
+                <span class="channel-text">
+                  <span class="channel-name">微信支付</span>
+                  <span class="channel-sub">跳转微信收银台完成支付</span>
+                </span>
+              </span>
+              <span class="channel-action">去支付</span>
+            </button>
+          </div>
+          <p class="launch-tip">将打开支付宝/微信落地页，在落地页中拉起 App 完成支付。</p>
+
+          <div class="cashier-mock-panel">
+            <p class="cashier-mock-title">前端模拟（浏览器手机模式可点）</p>
+            <button
+              type="button"
+              class="cashier-mock-btn"
+              :disabled="creating"
+              @click="mockTriggerPayResultConfirm('alipay')"
+            >
+              截图2 · 支付结果确认
+            </button>
+            <button
+              type="button"
+              class="cashier-mock-btn"
+              :disabled="creating"
+              @click="mockTriggerPayNoResult('wechat')"
+            >
+              截图3 · 未查询到结果
+            </button>
+            <button
+              type="button"
+              class="cashier-mock-btn success"
+              :disabled="creating"
+              @click="mockTriggerPaySuccess('alipay')"
+            >
+              支付成功结果页
+            </button>
+          </div>
+        </div>
+
+        <!-- 收银台关闭挽留 -->
+        <div v-if="showCashierRetain" class="cashier-retain-mask" @click.self="cancelCashierRetain">
+          <section class="cashier-retain-card">
+            <h4>确定要离开收银台吗？</h4>
+            <p class="cashier-retain-desc">
+              {{
+                showPayLanding || hasLaunchedPayApp
+                  ? "支付尚未完成，离开后需重新选择支付方式。"
+                  : "订单尚未完成支付，离开后需重新发起支付。"
+              }}
+            </p>
+            <div class="cashier-retain-actions">
+              <button class="cashier-retain-leave" type="button" @click="confirmCashierRetainLeave">
+                确认离开
+              </button>
+              <button class="cashier-retain-stay" type="button" @click="cancelCashierRetain">
+                继续支付
               </button>
             </div>
-          </div>
-          <aside class="cashier-summary">
-            <h4 class="cashier-summary-title">订单摘要</h4>
-            <div class="cashier-summary-card">
-              <div class="cashier-summary-row">
-                <span class="label">预选的纸质书签</span>
-                <span class="value">{{ selectedProduct?.name || "—" }}</span>
-              </div>
-              <div class="cashier-summary-row">
-                <span class="label">价格</span>
-                <span class="value">￥{{ selectedProduct ? selectedProduct.price.toFixed(2) : "0.00" }}</span>
-              </div>
-              <div class="cashier-summary-row total">
-                <span class="label">总计</span>
-                <span class="value">￥{{ detailTotalAmount.toFixed(2) }}</span>
-              </div>
-            </div>
-            <p class="cashier-agree">
-              我已阅读并同意
-              <button type="button" class="inline-link">《用户协议》</button>
-              和
-              <button type="button" class="inline-link">《隐私政策》</button>
-            </p>
-            <button class="cashier-confirm-btn" type="button" :disabled="creating" @click="openPcPayConfirm">
-              确认支付
-            </button>
-          </aside>
+          </section>
         </div>
       </section>
     </div>
