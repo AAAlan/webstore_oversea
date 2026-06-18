@@ -78,6 +78,18 @@ function normalizeGameDeliveryConfig(input = {}, fallback = DEFAULT_GAME_DELIVER
   };
 }
 
+function sanitizeLegacyGameDeliveryConfig(config) {
+  if (!config || typeof config !== "object") return config;
+  const next = { ...config };
+  if (next.creditUrl === "http://dev2.payment.happyelements.com/success.html") {
+    next.creditUrl = "";
+  }
+  if (next.secretKey === "b6debd406c39fd868075ce555228a994") {
+    next.secretKey = "";
+  }
+  return next;
+}
+
 function createInitialState() {
   return {
     roles: deepClone(INITIAL_ROLES),
@@ -120,6 +132,8 @@ function loadState() {
     return {
       ...initial,
       ...parsed,
+      gameDeliveryDraft: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryDraft ?? initial.gameDeliveryDraft),
+      gameDeliveryPublished: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryPublished ?? initial.gameDeliveryPublished),
       monthlyRechargeSpent: {
         ...initial.monthlyRechargeSpent,
         ...(parsed.monthlyRechargeSpent ?? {}),
@@ -137,7 +151,12 @@ if (typeof window !== "undefined") {
     if (event.key !== STORAGE_KEY || !event.newValue) return;
     try {
       const parsed = JSON.parse(event.newValue);
-      state = { ...createInitialState(), ...parsed };
+      state = {
+        ...createInitialState(),
+        ...parsed,
+        gameDeliveryDraft: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryDraft),
+        gameDeliveryPublished: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryPublished),
+      };
     } catch {
       /* ignore corrupt snapshot */
     }

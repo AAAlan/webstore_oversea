@@ -22,8 +22,8 @@ export const INITIAL_PRODUCT_CATEGORIES = [
 
 export const DEFAULT_GAME_DELIVERY_CONFIG = {
   gameId: "silver",
-  creditUrl: "http://dev2.payment.happyelements.com/success.html",
-  secretKey: "b6debd406c39fd868075ce555228a994",
+  creditUrl: "",
+  secretKey: "",
   whitelist: [],
   forwardRules: [],
 };
