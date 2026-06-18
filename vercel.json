@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build:demo",
+  "outputDirectory": "demo-dist",
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
