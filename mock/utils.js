@@ -1,4 +1,9 @@
 import { DEFAULT_MALL_CONFIG } from "./data.js";
+import {
+  computeRemainingDays,
+  formatRemainingDaysLabel,
+  formatRemainingTimeLabel,
+} from "../shared/time-limit.js";
 
 export function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -49,12 +54,54 @@ export function normalizeRechargeTips(input) {
   return DEFAULT_MALL_CONFIG.header.rechargeTips;
 }
 
-export function normalizeLanguageConfig(input = {}, fallback = {}) {
+function normalizeBannerConfig(input = {}, fallback = {}) {
+  return {
+    id: typeof input.id === "string" ? input.id : fallback.id ?? `banner-${Date.now()}`,
+    title: typeof input.title === "string" ? input.title : fallback.title ?? "",
+    imageUrl: typeof input.imageUrl === "string" ? input.imageUrl : fallback.imageUrl ?? "",
+    linkUrl: typeof input.linkUrl === "string" ? input.linkUrl : fallback.linkUrl ?? "",
+    enabled: typeof input.enabled === "boolean" ? input.enabled : fallback.enabled ?? true,
+    sortOrder: Number.isFinite(input.sortOrder) ? input.sortOrder : fallback.sortOrder ?? 0,
+  };
+}
+
+function normalizeBannerList(input, fallback = []) {
+  const source = Array.isArray(input) && input.length ? input : fallback;
+  return (source ?? []).map((banner, index) =>
+    normalizeBannerConfig(banner, fallback[index] ?? { sortOrder: index + 1, enabled: true }),
+  );
+}
+
+function normalizeFooterLinks(input = {}, fallback = {}) {
+  const source = input && typeof input === "object" ? input : {};
+  const base = fallback && typeof fallback === "object" ? fallback : {};
+  const keys = new Set([
+    ...Object.keys(DEFAULT_MALL_CONFIG.footer.footerLinks ?? {}),
+    ...Object.keys(base),
+    ...Object.keys(source),
+  ]);
+  return Object.fromEntries(
+    Array.from(keys).map((key) => [
+      key,
+      typeof source[key] === "string"
+        ? source[key]
+        : typeof base[key] === "string"
+          ? base[key]
+          : "",
+    ]),
+  );
+}
+
+export function normalizeLanguageConfig(input = {}, fallback = {}, fallbackBanners = []) {
   return {
     gameName:
       typeof input.gameName === "string"
         ? input.gameName
         : fallback.gameName ?? DEFAULT_MALL_CONFIG.game.name,
+    banners: normalizeBannerList(
+      input.banners,
+      Array.isArray(fallbackBanners) ? fallbackBanners : fallback.banners ?? [],
+    ),
     rechargeTips: normalizeRechargeTips(input.rechargeTips ?? fallback.rechargeTips),
     copyrightText:
       typeof input.copyrightText === "string"
@@ -80,57 +127,39 @@ export function normalizeLanguageConfig(input = {}, fallback = {}) {
       typeof input.footerDisclaimer === "string"
         ? input.footerDisclaimer
         : fallback.footerDisclaimer ?? "",
-    footerLinks:
-      input.footerLinks && typeof input.footerLinks === "object"
-        ? {
-            termsLabel:
-              typeof input.footerLinks.termsLabel === "string"
-                ? input.footerLinks.termsLabel
-                : fallback.footerLinks?.termsLabel ?? "",
-            privacyLabel:
-              typeof input.footerLinks.privacyLabel === "string"
-                ? input.footerLinks.privacyLabel
-                : fallback.footerLinks?.privacyLabel ?? "",
-            contactLabel:
-              typeof input.footerLinks.contactLabel === "string"
-                ? input.footerLinks.contactLabel
-                : fallback.footerLinks?.contactLabel ?? "",
-            rulesLabel:
-              typeof input.footerLinks.rulesLabel === "string"
-                ? input.footerLinks.rulesLabel
-                : fallback.footerLinks?.rulesLabel ?? "",
-            paymentLabel:
-              typeof input.footerLinks.paymentLabel === "string"
-                ? input.footerLinks.paymentLabel
-                : fallback.footerLinks?.paymentLabel ?? "",
-            ageLabel:
-              typeof input.footerLinks.ageLabel === "string"
-                ? input.footerLinks.ageLabel
-                : fallback.footerLinks?.ageLabel ?? "",
-          }
-        : fallback.footerLinks ?? {},
+    footerLinks: normalizeFooterLinks(input.footerLinks, fallback.footerLinks),
   };
 }
 
-export function normalizeLanguages(input) {
+export function normalizeLanguages(input, fallbackBanners = DEFAULT_MALL_CONFIG.banners) {
   const raw = input ?? {};
-  return Object.fromEntries(
-    Object.entries(DEFAULT_MALL_CONFIG.languages).map(([locale, defaults]) => [
+  const entries = Object.entries(DEFAULT_MALL_CONFIG.languages).map(([locale, defaults]) => [
+    locale,
+    normalizeLanguageConfig(raw[locale], defaults, fallbackBanners),
+  ]);
+  for (const [locale, value] of Object.entries(raw)) {
+    if (DEFAULT_MALL_CONFIG.languages[locale]) continue;
+    entries.push([
       locale,
-      normalizeLanguageConfig(raw[locale], defaults),
-    ]),
-  );
+      normalizeLanguageConfig(value, { banners: fallbackBanners, footerLinks: {} }, fallbackBanners),
+    ]);
+  }
+  return Object.fromEntries(entries);
 }
 
 export function normalizeMallConfig(input) {
   const raw = input ?? {};
   if (raw.header && raw.footer) {
-    const languages = normalizeLanguages(raw.languages);
+    const banners = normalizeBannerList(raw.banners, DEFAULT_MALL_CONFIG.banners);
+    const languages = normalizeLanguages(raw.languages, banners);
     return {
       ...raw,
+      banners,
       languages,
       header: {
         ...raw.header,
+        rechargeCenterName:
+          raw.header.rechargeCenterName ?? DEFAULT_MALL_CONFIG.header.rechargeCenterName,
         rechargeTips: normalizeRechargeTips(raw.header.rechargeTips),
       },
       game: {
@@ -154,11 +183,12 @@ export function normalizeMallConfig(input) {
       icon: raw.game?.icon ?? "",
       iconUrl: raw.game?.iconUrl ?? null,
     },
-    banners: Array.isArray(raw.banners) ? raw.banners : DEFAULT_MALL_CONFIG.banners,
+    banners: normalizeBannerList(raw.banners, DEFAULT_MALL_CONFIG.banners),
     header: {
       publisherLogoUrl: null,
       customerServiceUrl:
         legacyFooter.customerServiceUrl ?? DEFAULT_MALL_CONFIG.header.customerServiceUrl,
+      rechargeCenterName: DEFAULT_MALL_CONFIG.header.rechargeCenterName,
       rechargeTips: legacyTips,
     },
     footer: {
@@ -173,7 +203,8 @@ export function normalizeMallConfig(input) {
         : DEFAULT_MALL_CONFIG.footer.contactText,
       icpText: legacyFooter.icpText ?? DEFAULT_MALL_CONFIG.footer.icpText,
     },
-    languages: normalizeLanguages(raw.languages),
+    banners: normalizeBannerList(raw.banners, DEFAULT_MALL_CONFIG.banners),
+    languages: normalizeLanguages(raw.languages, raw.banners ?? DEFAULT_MALL_CONFIG.banners),
     updatedAt:
       typeof raw.updatedAt === "string" ? raw.updatedAt : new Date().toISOString(),
   };
@@ -195,17 +226,4 @@ export function buildPeriodBucket(period, at) {
   return "";
 }
 
-export function computeRemainingDays(timeLimitEnd, now = Date.now()) {
-  if (!timeLimitEnd) return null;
-  const end = new Date(timeLimitEnd).getTime();
-  if (Number.isNaN(end)) return null;
-  const diff = end - now;
-  if (diff <= 0) return 0;
-  return Math.ceil(diff / 86400000);
-}
-
-export function formatRemainingDaysLabel(days) {
-  if (days == null) return null;
-  if (days <= 0) return "活动已结束";
-  return `剩余${days}天`;
-}
+export { computeRemainingDays, formatRemainingDaysLabel, formatRemainingTimeLabel };

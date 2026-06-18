@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { adminApi } from "../api.js";
 import PublishBar from "../components/PublishBar.vue";
+import { buildLocaleOptions } from "../../../shared/language-presets.js";
 
 const props = defineProps({ loading: Boolean });
 const emit = defineEmits(["toast", "loading", "status-change"]);
@@ -12,15 +13,12 @@ const searchKey = ref("");
 const categoryFilter = ref("");
 const modalVisible = ref(false);
 const detail = reactive(emptyEntry());
+const localeOptions = ref([]);
 
-const detailLanguages = [
-  { code: "zh-CN", label: "简体中文", source: true },
-  { code: "en", label: "英语" },
-  { code: "ko", label: "韩语" },
-  { code: "ja", label: "日语" },
-  { code: "zh-TW", label: "繁体中文" },
-];
-const translationColumns = detailLanguages.filter((language) => !language.source);
+const detailLanguages = computed(() => localeOptions.value);
+const translationColumns = computed(() =>
+  localeOptions.value.filter((language) => language.code !== "zh-CN"),
+);
 
 function emptyEntry() {
   return {
@@ -28,7 +26,7 @@ function emptyEntry() {
     category: "",
     usage: "",
     sourceText: "",
-    values: { "zh-CN": "", en: "", ko: "", ja: "", "zh-TW": "" },
+    values: {},
   };
 }
 
@@ -51,11 +49,21 @@ const filteredItems = computed(() => {
 async function load() {
   emit("loading", true);
   try {
-    const data = await adminApi.translations.list();
+    const [translationData, mallConfigData] = await Promise.all([
+      adminApi.translations.list(),
+      adminApi.mallConfig.get(),
+    ]);
+    const draftConfig = mallConfigData?.draft ?? mallConfigData?.published ?? {};
+    localeOptions.value = buildLocaleOptions({
+      languageMeta: draftConfig.languageMeta ?? {},
+      languages: draftConfig.languages ?? {},
+    });
+    const data = translationData;
     items.value = data.items ?? [];
     publishMeta.value = data.meta ?? null;
     emit("status-change");
   } catch (error) {
+    localeOptions.value = buildLocaleOptions();
     emit("toast", "error", error.message);
   } finally {
     emit("loading", false);
@@ -122,12 +130,9 @@ defineExpose({ load });
     <section class="panel">
       <div class="panel-header">
         <h3>多语言管理</h3>
-        <button class="btn btn--publish btn--sm" type="button" :disabled="!publishMeta?.hasUnpublishedChanges" @click="publish">
-          发布到线上
-        </button>
       </div>
       <div class="panel-body">
-        <div class="translation-toolbar">
+          <div class="translation-toolbar">
           <div class="field">
             <label>Key</label>
             <input v-model="searchKey" placeholder="Key 关键字模糊搜索" />
@@ -176,7 +181,7 @@ defineExpose({ load });
                 </td>
               </tr>
               <tr v-if="!filteredItems.length">
-                <td colspan="9" class="empty-cell">暂无多语言文案</td>
+                <td :colspan="translationColumns.length + 6" class="empty-cell">暂无多语言文案</td>
               </tr>
             </tbody>
           </table>
@@ -223,7 +228,7 @@ defineExpose({ load });
           >
             <span class="translation-detail-language">
               {{ language.label }}
-              <em v-if="language.source">原文</em>
+              <em v-if="language.code === 'zh-CN'">原文</em>
             </span>
             <strong
               :class="{ empty: !String(detail.values?.[language.code] ?? '').trim() }"

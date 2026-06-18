@@ -183,6 +183,9 @@ export function getProductAgeLimitReason(limit, unitPrice, quantity = 1) {
 }
 
 export function applyAgeLimitToProduct(product, limit) {
+  if (limit?.ageTier === "jp-under16" || limit?.ageTier === "jp-16to20") {
+    return product;
+  }
   const ageLimitReason = getProductAgeLimitReason(limit, product.price, 1);
   if (!ageLimitReason) {
     return product;

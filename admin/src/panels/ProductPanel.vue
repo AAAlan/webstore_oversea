@@ -3,20 +3,23 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { adminApi } from "../api.js";
 import ImageUploadField from "../components/ImageUploadField.vue";
 import MultilingualField from "../components/MultilingualField.vue";
-import PublishBar from "../components/PublishBar.vue";
-import { computeRemainingDays } from "../lib/time-limit.js";
+import { formatRemainingTimeLabel } from "../lib/time-limit.js";
+import { useAutosave } from "../lib/useAutosave.js";
+import { buildLocaleOptions } from "../../../shared/language-presets.js";
 
 const props = defineProps({ loading: Boolean });
 const emit = defineEmits(["toast", "loading", "status-change"]);
 
 const products = ref([]);
-const publishMeta = ref(null);
 const productModal = ref(false);
 const editingProductId = ref(null);
+const autosaveProductId = ref(null);
 const viewOnly = ref(false);
 const categoryOptions = ref([]);
 const gameGoodsCatalog = ref([]);
 const translationMap = ref({});
+const localeOptions = ref([]);
+const timeLimitPreviewLocale = ref("zh-CN");
 
 function emptyProductForm() {
   const defaultCategory = categoryOptions.value[0]?.id || "bundle";
@@ -43,6 +46,13 @@ function emptyProductForm() {
 }
 
 const productForm = reactive(emptyProductForm());
+const autosave = useAutosave({
+  watchSource: productForm,
+  snapshot: () => JSON.stringify(buildPayload()),
+  save: () => persistProductDraft({ quiet: true }),
+  enabled: computed(() => productModal.value && !viewOnly.value && !props.loading),
+  delay: 900,
+});
 
 const currencyOptions = [
   { value: "CNY", label: "CNY 人民币" },
@@ -64,17 +74,9 @@ const categoryLabelMap = computed(() =>
   Object.fromEntries(categoryOptions.value.map((c) => [c.id, c.label])),
 );
 
-const computedRemainingDays = computed(() =>
-  computeRemainingDays(productForm.timeLimitEnd),
+const remainingTimePreview = computed(
+  () => formatRemainingTimeLabel(productForm.timeLimitEnd, timeLimitPreviewLocale.value) || "",
 );
-
-const remainingDaysPreview = computed(() => {
-  if (!productForm.timeLimitEnd) return "";
-  const days = computedRemainingDays.value;
-  if (days == null) return "";
-  if (days <= 0) return "活动已结束";
-  return `C 端将展示「剩余${days}天」`;
-});
 
 const usedGoodsIds = computed(() =>
   new Set(
@@ -92,7 +94,7 @@ const selectableGameGoods = computed(() =>
 async function loadCategories() {
   try {
     const data = await adminApi.productCategories.list();
-    categoryOptions.value = (data.items ?? []).filter((c) => c.enabled);
+    categoryOptions.value = data.items ?? [];
   } catch {
     categoryOptions.value = [
       { id: "gem", label: "衍质源石" },
@@ -123,6 +125,22 @@ async function loadTranslations() {
   }
 }
 
+async function loadMallConfig() {
+  try {
+    const data = await adminApi.mallConfig.get();
+    const draft = data.draft ?? data.published ?? {};
+    localeOptions.value = buildLocaleOptions({
+      languageMeta: draft.languageMeta ?? {},
+      languages: draft.languages ?? {},
+    });
+    if (!localeOptions.value.some((item) => item.code === timeLimitPreviewLocale.value)) {
+      timeLimitPreviewLocale.value = localeOptions.value[0]?.code ?? "zh-CN";
+    }
+  } catch {
+    localeOptions.value = buildLocaleOptions();
+  }
+}
+
 function valuesFor(key, fallback = "") {
   return {
     "zh-CN": fallback,
@@ -135,19 +153,19 @@ async function saveTranslation(entry) {
     await adminApi.translations.save(entry);
     await loadTranslations();
     emit("status-change");
-    emit("toast", "success", "多语言文案已保存");
+    if (!entry?.silent) emit("toast", "success", "多语言文案已保存");
   } catch (error) {
-    emit("toast", "error", error.message);
+    if (!entry?.silent) emit("toast", "error", error.message);
   }
 }
 
 async function load() {
   emit("loading", true);
   try {
-    await Promise.all([loadCategories(), loadGameGoods(), loadTranslations()]);
+    await Promise.all([loadCategories(), loadGameGoods(), loadTranslations(), loadMallConfig()]);
     const data = await adminApi.products.list();
     products.value = data.items ?? [];
-    publishMeta.value = data.meta ?? null;
+    autosave.markClean(JSON.stringify(buildPayload()));
     emit("status-change");
   } catch (e) {
     emit("toast", "error", e.message);
@@ -156,20 +174,10 @@ async function load() {
   }
 }
 
-async function publishProducts() {
-  if (!publishMeta.value?.hasUnpublishedChanges) return;
-  if (!confirm("确认发布商品草稿？（暂不会同步到 C 端商城）")) return;
-  emit("loading", true);
-  try {
-    const result = await adminApi.products.publish();
-    publishMeta.value = result.meta;
-    emit("status-change");
-    emit("toast", "success", `已发布 ${result.count} 个商品（后台配置）`);
-  } catch (e) {
-    emit("toast", "error", e.message);
-  } finally {
-    emit("loading", false);
-  }
+async function refreshProductsList() {
+  const data = await adminApi.products.list();
+  products.value = data.items ?? [];
+  emit("status-change");
 }
 
 function fillProductForm(product) {
@@ -200,22 +208,33 @@ function fillProductForm(product) {
 function openCreate() {
   viewOnly.value = false;
   editingProductId.value = null;
+  autosaveProductId.value = null;
   Object.assign(productForm, emptyProductForm());
   productModal.value = true;
+  autosave.markClean(JSON.stringify(buildPayload()));
 }
 
 function openView(product) {
   viewOnly.value = true;
   editingProductId.value = product.id;
+  autosaveProductId.value = product.id;
   fillProductForm(product);
   productModal.value = true;
+  autosave.markClean(JSON.stringify(buildPayload()));
 }
 
 function openEdit(product) {
   viewOnly.value = false;
   editingProductId.value = product.id;
+  autosaveProductId.value = product.id;
   fillProductForm(product);
   productModal.value = true;
+  autosave.markClean(JSON.stringify(buildPayload()));
+}
+
+function closeProductModal() {
+  void autosave.flush();
+  productModal.value = false;
 }
 
 function applyGameGoodsTemplate(goodsId) {
@@ -266,29 +285,45 @@ function buildPayload() {
   return payload;
 }
 
-async function saveProduct() {
+async function persistProductDraft({ quiet = false } = {}) {
   const payload = buildPayload();
-  emit("loading", true);
+  if (!quiet) emit("loading", true);
   try {
-    if (editingProductId.value) {
-      await adminApi.products.update(editingProductId.value, payload);
-      emit("toast", "success", "已保存至商品草稿");
+    if (viewOnly.value) return false;
+
+    let saved;
+    const targetId = editingProductId.value || autosaveProductId.value;
+    if (targetId) {
+      saved = await adminApi.products.update(targetId, payload);
+      autosaveProductId.value = saved.id ?? targetId;
+      editingProductId.value = autosaveProductId.value;
     } else {
       if (!productForm.goodsId.trim()) {
-        emit("toast", "error", "请选择游戏库存 GoodsID");
-        return;
+        if (!quiet) emit("toast", "error", "请选择游戏库存 GoodsID");
+        return false;
       }
       payload.goodsId = productForm.goodsId.trim();
-      await adminApi.products.create(payload);
-      emit("toast", "success", "已加入商品草稿");
+      saved = await adminApi.products.create(payload);
+      autosaveProductId.value = saved.id ?? payload.goodsId;
+      editingProductId.value = autosaveProductId.value;
     }
-    productModal.value = false;
-    await load();
-    emit("status-change");
+
+    autosave.markClean(JSON.stringify(buildPayload()));
+    await refreshProductsList();
+    if (!quiet) emit("toast", "success", "已保存至商品草稿");
+    return true;
   } catch (e) {
-    emit("toast", "error", e.message);
+    if (!quiet) emit("toast", "error", e.message);
+    return false;
   } finally {
-    emit("loading", false);
+    if (!quiet) emit("loading", false);
+  }
+}
+
+async function saveProduct() {
+  const saved = await persistProductDraft({ quiet: false });
+  if (saved) {
+    productModal.value = false;
   }
 }
 
@@ -297,8 +332,12 @@ async function removeProduct(id) {
   emit("loading", true);
   try {
     await adminApi.products.remove(id);
-    await load();
-    emit("status-change");
+    await refreshProductsList();
+    if (editingProductId.value === id || autosaveProductId.value === id) {
+      productModal.value = false;
+      editingProductId.value = null;
+      autosaveProductId.value = null;
+    }
     emit("toast", "success", "已从草稿删除");
   } catch (e) {
     emit("toast", "error", e.message);
@@ -329,21 +368,16 @@ onMounted(() => {
   load();
 });
 
-defineExpose({ load });
+defineExpose({
+  load,
+  autosaveStatus: autosave.status,
+});
 </script>
 
 <template>
   <div class="product-panel">
-    <PublishBar
-      :meta="publishMeta"
-      :loading="props.loading"
-      module-label="商品管理"
-      hide-save-draft
-      @publish="publishProducts"
-    />
-
     <p class="page-intro">
-      新增/编辑商品写入<strong>草稿</strong>，确认后<strong>发布</strong>更新后台配置；C 端商城仍使用独立演示数据。
+      新增/编辑商品写入<strong>草稿</strong>，请使用页面顶部的<strong>发布</strong>更新后台配置；C 端商城仍使用独立演示数据。
       GoodsID 须从游戏库存列表选择；限购周期最长支持赛季/活动（约 3 个月），不支持终身限购。
     </p>
 
@@ -354,7 +388,7 @@ defineExpose({ load });
       </div>
       <p class="hint panel-hint">
         限购次数在后台配置「上限」；<strong>剩余次数</strong>由 Payment 查询 + 账号角色实时计算，不可直接编辑。
-        活动剩余天数由<strong>活动结束时间</strong>自动计算，无需手工填写。
+        活动剩余时长由<strong>活动结束时间</strong>自动计算，无需手工填写。
       </p>
       <div class="table-wrap">
         <table>
@@ -402,7 +436,7 @@ defineExpose({ load });
       </div>
     </section>
 
-    <div v-if="productModal" class="modal-mask" @click.self="productModal = false">
+    <div v-if="productModal" class="modal-mask" @click.self="closeProductModal">
       <section class="modal modal--wide">
         <h3>{{ viewOnly ? "查看商品" : editingProductId ? "编辑商品" : "新增商品" }}</h3>
 
@@ -471,6 +505,7 @@ defineExpose({ load });
                     placeholder="C 端卡片标题"
                     :disabled="viewOnly"
                     :translations="valuesFor(`product.${productForm.goodsId || 'new'}.name`, productForm.name)"
+                    :locale-options="localeOptions"
                     @save-translations="saveTranslation"
                   />
                 </div>
@@ -486,6 +521,7 @@ defineExpose({ load });
                     multiline
                     :disabled="viewOnly"
                     :translations="valuesFor(`product.${productForm.goodsId || 'new'}.description`, productForm.description)"
+                    :locale-options="localeOptions"
                     @save-translations="saveTranslation"
                   />
                 </div>
@@ -597,7 +633,7 @@ defineExpose({ load });
           <section class="form-section">
             <header class="form-section__head">
               <h4 class="form-section__title">5. 活动时效</h4>
-              <p class="form-section__hint">配置活动结束时间，C 端右上角自动展示剩余天数。</p>
+              <p class="form-section__hint">配置活动结束时间，C 端右上角自动展示剩余天数；不足 1 天时展示剩余小时数。</p>
             </header>
             <div class="form-section__body">
               <div class="form-grid">
@@ -606,8 +642,16 @@ defineExpose({ load });
                   <input v-model="productForm.timeLimitEnd" type="datetime-local" :disabled="viewOnly" />
                 </div>
                 <div class="field">
-                  <label>剩余天数预览</label>
-                  <input :value="remainingDaysPreview || '—'" readonly class="readonly-field" />
+                  <label>预览语言</label>
+                  <select v-model="timeLimitPreviewLocale" :disabled="viewOnly">
+                    <option v-for="language in localeOptions" :key="language.code" :value="language.code">
+                      {{ language.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>剩余时长预览</label>
+                  <input :value="remainingTimePreview || '—'" readonly class="readonly-field" />
                 </div>
               </div>
             </div>
@@ -633,6 +677,7 @@ defineExpose({ load });
                     placeholder="如：双倍-限购1次"
                     :disabled="viewOnly"
                     :translations="valuesFor(`product.${productForm.goodsId || 'new'}.tag`, productForm.tag)"
+                    :locale-options="localeOptions"
                     @save-translations="saveTranslation"
                   />
                 </div>
@@ -647,6 +692,7 @@ defineExpose({ load });
                     placeholder="如：购买共获得 6 颗行质源石（首充共获得 12 颗）。"
                     :disabled="viewOnly"
                     :translations="valuesFor(`product.${productForm.goodsId || 'new'}.promoText`, productForm.promoText)"
+                    :locale-options="localeOptions"
                     @save-translations="saveTranslation"
                   />
                 </div>
@@ -656,7 +702,7 @@ defineExpose({ load });
         </div>
 
         <div class="modal-actions">
-          <button class="btn btn--ghost" type="button" @click="productModal = false">
+          <button class="btn btn--ghost" type="button" @click="closeProductModal">
             {{ viewOnly ? "关闭" : "取消" }}
           </button>
           <button v-if="!viewOnly" class="btn" type="button" @click="saveProduct">保存草稿</button>

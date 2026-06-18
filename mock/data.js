@@ -10,14 +10,23 @@ function daysFromNow(days) {
 export const LOCKED_DEMO_ACCOUNT = "15200000002";
 export const BANNED_DEMO_ACCOUNT = "15200000003";
 export const ADMIN_TOKEN = "demo-admin-token";
+export const EDITOR_TOKEN = "demo-editor-token";
 export const STORAGE_KEY = "web-store-mock-state-v1";
 
 export const INITIAL_PRODUCT_CATEGORIES = [
-  { id: "gem", label: "衍质源石", sortOrder: 10, enabled: true },
-  { id: "monthly", label: "月卡", sortOrder: 20, enabled: true },
-  { id: "pass", label: "协议通行证", sortOrder: 30, enabled: true },
-  { id: "bundle", label: "组合包", sortOrder: 40, enabled: true },
+  { id: "gem", label: "衍质源石", sortOrder: 10 },
+  { id: "monthly", label: "月卡", sortOrder: 20 },
+  { id: "pass", label: "协议通行证", sortOrder: 30 },
+  { id: "bundle", label: "组合包", sortOrder: 40 },
 ];
+
+export const DEFAULT_GAME_DELIVERY_CONFIG = {
+  gameId: "silver",
+  creditUrl: "http://dev2.payment.happyelements.com/success.html",
+  secretKey: "b6debd406c39fd868075ce555228a994",
+  whitelist: [],
+  forwardRules: [],
+};
 
 export const MOCK_GAME_GOODS_CATALOG = [
   {
@@ -96,6 +105,17 @@ export const MOCK_GAME_GOODS_CATALOG = [
   },
 ];
 
+const DEFAULT_BANNERS = [
+  {
+    id: "banner-1",
+    title: "春季活动",
+    imageUrl: "",
+    linkUrl: "https://www.happyelements.com/",
+    enabled: true,
+    sortOrder: 1,
+  },
+];
+
 const DEFAULT_RECHARGE_SECTIONS = [
   {
     title: "温馨提示",
@@ -116,19 +136,11 @@ const DEFAULT_RECHARGE_SECTIONS = [
 
 export const DEFAULT_MALL_CONFIG = {
   game: { name: "终末地", icon: "", iconUrl: null },
-  banners: [
-    {
-      id: "banner-1",
-      title: "春季活动",
-      imageUrl: "",
-      linkUrl: "https://www.happyelements.com/",
-      enabled: true,
-      sortOrder: 1,
-    },
-  ],
+  banners: deepClone(DEFAULT_BANNERS),
   header: {
     publisherLogoUrl: "/assets/publisher-logo.png",
     customerServiceUrl: "https://www.happyelements.com/",
+    rechargeCenterName: "充值中心",
     rechargeTips: { contentHtml: sectionsToContentHtml(DEFAULT_RECHARGE_SECTIONS) },
   },
   footer: {
@@ -139,9 +151,17 @@ export const DEFAULT_MALL_CONFIG = {
     contactText: "Customer Support",
     icpText: "",
   },
+  languageMeta: {
+    "zh-CN": { label: "简中" },
+    "zh-TW": { label: "繁中" },
+    en: { label: "英语" },
+    ja: { label: "日语" },
+    ko: { label: "韩语" },
+  },
   languages: {
     "zh-CN": {
       gameName: "终末地",
+      banners: deepClone(DEFAULT_BANNERS),
       rechargeTips: { contentHtml: sectionsToContentHtml(DEFAULT_RECHARGE_SECTIONS) },
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -157,6 +177,7 @@ export const DEFAULT_MALL_CONFIG = {
     },
     "zh-TW": {
       gameName: "終末地",
+      banners: deepClone(DEFAULT_BANNERS),
       rechargeTips: { contentHtml: sectionsToContentHtml(DEFAULT_RECHARGE_SECTIONS) },
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -172,6 +193,7 @@ export const DEFAULT_MALL_CONFIG = {
     },
     en: {
       gameName: "Arknights: Endfield",
+      banners: deepClone(DEFAULT_BANNERS),
       rechargeTips: { contentHtml: "<h4>Notice</h4><p>Please confirm your account and role before payment.</p><p>Items are usually delivered shortly after payment. If delayed, please log in again later.</p>" },
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -187,6 +209,7 @@ export const DEFAULT_MALL_CONFIG = {
     },
     ja: {
       gameName: "アークナイツ：エンドフィールド",
+      banners: deepClone(DEFAULT_BANNERS),
       rechargeTips: { contentHtml: "<h4>注意事項</h4><p>支払い前にアカウントとキャラクター情報をご確認ください。</p><p>購入内容は通常すぐに反映されます。遅延する場合は時間をおいて再ログインしてください。</p>" },
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -204,6 +227,7 @@ export const DEFAULT_MALL_CONFIG = {
     },
     ko: {
       gameName: "명일방주: 엔드필드",
+      banners: deepClone(DEFAULT_BANNERS),
       rechargeTips: { contentHtml: "<h4>안내</h4><p>결제 전 계정과 캐릭터 정보를 확인해 주세요.</p><p>결제 완료 후 아이템은 보통 빠르게 지급됩니다. 지연 시 잠시 후 다시 로그인해 주세요.</p>" },
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",

@@ -1454,6 +1454,27 @@ button:disabled {
   position: relative;
 }
 
+.role-select-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: transparent;
+  color: #f2f2f2;
+  font-size: 36px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.role-select-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
 .role-select-head {
   height: 70px;
   display: flex;
@@ -1545,25 +1566,10 @@ button:disabled {
   color: #a0a7af;
 }
 
-.role-select-meta,
-.role-select-default {
+.role-select-meta {
   color: #56616d;
   font-size: 13px;
   line-height: 1.4;
-}
-
-.role-select-default {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.role-radio-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px solid #b9c0c8;
-  display: inline-block;
 }
 
 .role-select-confirm {
@@ -1800,9 +1806,11 @@ button:disabled {
 }
 
 .cashier-card--pc {
-  border-radius: 14px;
-  padding: 24px 28px 28px;
-  width: min(480px, 92vw);
+  border-radius: 16px;
+  padding: 0;
+  width: min(1040px, 94vw);
+  text-align: left;
+  overflow: hidden;
 }
 
 .cashier-card--h5 {
@@ -1826,108 +1834,252 @@ button:disabled {
   color: #4f5d6b;
 }
 
-/* PC 扫码收银台 */
+/* PC 收银台 */
 .cashier-pc {
-  margin-top: 16px;
-  text-align: center;
+  margin-top: 0;
 }
 
-.cashier-pc-tabs {
-  display: flex;
+.cashier-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.15fr) minmax(300px, 0.85fr);
+  min-height: 560px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+}
+
+.cashier-side {
+  padding: 28px 32px;
+}
+
+.cashier-side--methods {
+  background: #eff3f7;
+  border-right: 1px solid #e6ebf0;
+}
+
+.cashier-side--summary {
+  background: #fff;
+}
+
+.cashier-side-head h3 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+  color: #1f2328;
+}
+
+.cashier-security {
+  margin: 10px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5f8f5f;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cashier-security-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e7f6ea;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 0;
-  border-bottom: 1px solid #eceef1;
-  margin-bottom: 20px;
+  font-size: 11px;
+  color: #4f8a5a;
+  flex-shrink: 0;
 }
 
-.cashier-tab {
-  width: auto;
-  flex: 1;
-  max-width: 160px;
-  height: 40px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: #6d7781;
-  font-size: 15px;
+.cashier-method-title {
+  margin: 28px 0 16px;
+  color: #4f5d6b;
+  font-size: 14px;
+}
+
+.cashier-method-list {
+  display: grid;
+  gap: 14px;
+}
+
+.cashier-method-item {
+  width: 100%;
+  min-height: 64px;
+  border: 1px solid #dde3ea;
+  border-radius: 12px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
   cursor: pointer;
-  margin-bottom: -1px;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.cashier-tab.active {
-  color: var(--brand-blue);
-  border-bottom-color: var(--brand-blue);
+.cashier-method-item:hover {
+  border-color: #cdd5de;
+  box-shadow: 0 6px 18px rgba(31, 35, 40, 0.05);
+  transform: translateY(-1px);
+}
+
+.cashier-method-item.active {
+  border-color: #1f2328;
+  box-shadow: 0 0 0 1px rgba(31, 35, 40, 0.05);
+}
+
+.cashier-method-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #bdc6d1;
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cashier-method-item.active .cashier-method-radio::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #1f2328;
+}
+
+.cashier-method-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cashier-method-name {
+  color: #1f2328;
+  font-size: 16px;
   font-weight: 600;
 }
 
-.cashier-qr-panel {
-  display: flex;
-  flex-direction: column;
+.cashier-method-note {
+  color: #7b8793;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.cashier-method-badge {
+  min-width: 44px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f4f6f8;
+  color: #4f5d6b;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.cashier-qr-box {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  border: 1px solid #e3e8ee;
-  border-radius: 8px;
-  background: #fff;
-  overflow: hidden;
+.cashier-paypal-save {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5c6978;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-.cashier-qr-box.channel-wechat {
-  border-color: #c8e6c9;
+.cashier-paypal-save input {
+  width: 16px;
+  height: 16px;
+  accent-color: #1f2328;
 }
 
-.cashier-qr-box.channel-alipay {
-  border-color: #bbdefb;
+.cashier-order-head {
+  padding-top: 22px;
 }
 
-.cashier-qr-pattern {
-  position: absolute;
-  inset: 12px;
-  background-image:
-    linear-gradient(90deg, #1f2328 2px, transparent 2px),
-    linear-gradient(#1f2328 2px, transparent 2px),
-    linear-gradient(90deg, rgba(31, 35, 40, 0.15) 1px, transparent 1px),
-    linear-gradient(rgba(31, 35, 40, 0.15) 1px, transparent 1px);
-  background-size: 24px 24px, 24px 24px, 8px 8px, 8px 8px;
-  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
-  opacity: 0.85;
-}
-
-.cashier-qr-brand {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 14px;
+.cashier-order-title {
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
   color: #1f2328;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  z-index: 1;
 }
 
-.cashier-qr-tip {
-  margin: 4px 0 0;
+.cashier-order-name {
+  margin: 12px 0 0;
   font-size: 14px;
   color: #4f5d6b;
+  line-height: 1.45;
 }
 
-.cashier-qr-order {
-  margin: 0;
-  font-size: 12px;
+.cashier-order-method {
+  margin: 18px 0 0;
+  color: #7b8793;
+  font-size: 13px;
+}
+
+.cashier-order-row,
+.cashier-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cashier-order-row {
+  margin-top: 24px;
+  color: #4f5d6b;
+  font-size: 14px;
+}
+
+.cashier-order-row strong {
+  color: #1f2328;
+  font-size: 16px;
+}
+
+.cashier-order-divider {
+  height: 1px;
+  margin: 18px 0;
+  background: repeating-linear-gradient(90deg, #dde3ea 0 10px, transparent 10px 18px);
+}
+
+.cashier-total-row {
+  color: #1f2328;
+  font-size: 15px;
+}
+
+.cashier-total-row strong {
+  color: #ff6d5f;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.cashier-agreement {
+  margin: 34px 0 0;
   color: #8b94a0;
-  word-break: break-all;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.paid-btn--pc {
-  margin-top: 18px;
+.cashier-pay-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #a7a7a7;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cashier-pay-btn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .cashier-retain-mask {
@@ -1948,6 +2100,16 @@ button:disabled {
   border-radius: 12px;
   padding: 22px 20px 18px;
   text-align: center;
+  position: relative;
+}
+
+.cashier-retain-close {
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  color: #7b8793;
 }
 
 .cashier-retain-card h4 {
@@ -1988,6 +2150,455 @@ button:disabled {
   color: #fff;
   font-size: 15px;
   cursor: pointer;
+}
+
+.cashier-retain-card.is-paypal {
+  width: min(332px, 100%);
+  padding-top: 52px;
+  padding-bottom: 22px;
+}
+
+.cashier-retain-card.is-paypal .cashier-retain-desc {
+  color: #6f7680;
+}
+
+/* PayPal 支付页 */
+.paypal-page-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: rgba(17, 19, 22, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.paypal-page {
+  width: min(420px, 100%);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+  padding: 28px 26px 24px;
+  position: relative;
+}
+
+.paypal-page-close {
+  top: 12px;
+  right: 12px;
+  font-size: 28px;
+  color: #7b8793;
+}
+
+.paypal-page-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.paypal-page-logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f3d8b;
+  letter-spacing: 0;
+}
+
+.paypal-page-sub {
+  color: #6f7680;
+  font-size: 14px;
+}
+
+.paypal-page-title {
+  margin: 18px 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2328;
+}
+
+.paypal-page-info {
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  background: #f6f8fb;
+}
+
+.paypal-page-product {
+  margin: 0;
+  color: #4f5d6b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.paypal-page-amount {
+  margin: 10px 0 0;
+  color: #ff644e;
+  font-size: 28px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.paypal-page-save {
+  margin: 14px 0 0;
+  color: #6f7680;
+  font-size: 13px;
+}
+
+.paypal-page-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.paypal-page-back,
+.paypal-page-paid {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.paypal-page-back {
+  background: #edf1f5;
+  color: #39414b;
+}
+
+.paypal-page-paid {
+  background: #1f2328;
+  color: #fff;
+}
+
+.paypal-page-paid:disabled {
+  opacity: 0.7;
+}
+
+/* Konbini 支付页 */
+.konbini-page-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 211;
+  background: rgba(17, 19, 22, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.konbini-page {
+  width: min(1180px, 100%);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+  position: relative;
+  overflow: hidden;
+}
+
+.konbini-page-close {
+  top: 12px;
+  right: 12px;
+  font-size: 28px;
+  color: #7b8793;
+  z-index: 3;
+}
+
+.konbini-page-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(440px, 1.05fr);
+  min-height: 660px;
+}
+
+.konbini-page-summary {
+  padding: 34px 28px 28px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.konbini-page-summary-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.konbini-page-summary-title {
+  margin: 0;
+  color: #66707d;
+  font-size: 14px;
+}
+
+.konbini-page-summary-amount {
+  margin: 0;
+  color: #1f2328;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.konbini-page-product {
+  margin: 22px 0 0;
+  color: #4f5d6b;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.konbini-page-meta {
+  margin-top: 28px;
+  display: grid;
+  gap: 12px;
+}
+
+.konbini-page-meta div {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e1e6ee;
+}
+
+.konbini-page-meta span {
+  display: block;
+  color: #7b8793;
+  font-size: 12px;
+}
+
+.konbini-page-meta strong {
+  display: block;
+  margin-top: 4px;
+  color: #1f2328;
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.konbini-page-download {
+  margin-top: auto;
+  height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: #1f56d8;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.konbini-page-detail {
+  padding: 34px 30px 28px;
+}
+
+.konbini-page-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.konbini-page-brand-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f2328;
+}
+
+.konbini-page-brand-sub {
+  color: #6f7680;
+  font-size: 14px;
+}
+
+.konbini-page-note {
+  margin: 16px 0 18px;
+  color: #6f7680;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.konbini-page-code {
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  background: #f6f8fb;
+  border: 1px solid #e4e9f0;
+}
+
+.konbini-page-code-label {
+  margin: 0;
+  color: #6f7680;
+  font-size: 13px;
+}
+
+.konbini-page-code-value {
+  margin: 10px 0 0;
+  color: #1f2328;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  word-break: break-all;
+}
+
+.konbini-page-code-expire {
+  margin: 10px 0 0;
+  color: #6f7680;
+  font-size: 12px;
+}
+
+.konbini-page-stores {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.konbini-store-item {
+  height: 44px;
+  border: 1px solid #dde3ea;
+  border-radius: 10px;
+  background: #fff;
+  color: #39414b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.konbini-page-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.konbini-page-back,
+.konbini-page-paid {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.konbini-page-back {
+  background: #edf1f5;
+  color: #39414b;
+}
+
+.konbini-page-paid {
+  background: #1f2328;
+  color: #fff;
+}
+
+.konbini-page-paid:disabled {
+  opacity: 0.7;
+}
+
+.konbini-return-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 212;
+  background: rgba(17, 19, 22, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.konbini-return-card {
+  width: min(360px, 100%);
+  border-radius: 14px;
+  background: #fff;
+  padding: 28px 24px 22px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.konbini-return-close {
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  color: #7b8793;
+}
+
+.konbini-return-icon {
+  width: 60px;
+  height: 60px;
+  margin: 2px auto 16px;
+  border-radius: 50%;
+  border: 4px solid #d9dde3;
+  color: #b5bcc4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.konbini-return-card h4 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #1f2328;
+}
+
+.konbini-return-desc {
+  margin: 0 0 22px;
+  color: #6f7680;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.konbini-return-confirm {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pay-toast {
+  position: fixed;
+  left: 50%;
+  top: 88px;
+  transform: translateX(-50%);
+  z-index: 240;
+  min-width: 320px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(38, 40, 44, 0.96);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pay-toast-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: pay-toast-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.pay-toast-text {
+  text-align: center;
+}
+
+@keyframes pay-toast-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* H5 支付列表 */
@@ -3096,13 +3707,84 @@ button:disabled {
     padding: 16px 14px 24px;
   }
 
-  .cashier-qr-box {
-    width: 168px;
-    height: 168px;
+  .cashier-card--pc {
+    width: 100%;
+    max-height: calc(100vh - 16px);
+    padding: 36px 0 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .cashier-amount {
-    font-size: 32px;
+  .cashier-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .cashier-side {
+    padding: 16px 14px;
+  }
+
+  .cashier-side--methods {
+    border-right: none;
+    border-bottom: 1px solid #e6ebf0;
+  }
+
+  .cashier-side-head h3 {
+    font-size: 20px;
+  }
+
+  .cashier-method-title {
+    margin: 18px 0 12px;
+  }
+
+  .cashier-method-list {
+    gap: 10px;
+  }
+
+  .cashier-method-item {
+    min-height: 52px;
+    padding: 10px 12px;
+  }
+
+  .cashier-method-name {
+    font-size: 14px;
+  }
+
+  .cashier-method-note {
+    font-size: 11px;
+  }
+
+  .cashier-order-head {
+    padding-top: 16px;
+  }
+
+  .cashier-order-name {
+    margin-top: 8px;
+  }
+
+  .cashier-order-row {
+    margin-top: 18px;
+  }
+
+  .cashier-order-divider {
+    margin: 14px 0;
+  }
+
+  .cashier-agreement {
+    margin-top: 22px;
+  }
+
+  .cashier-pay-btn {
+    margin-top: 10px;
+  }
+
+  .cashier-total-row strong {
+    font-size: 22px;
+  }
+
+  .cashier-mock-panel {
+    margin: 14px 16px 0;
   }
 
   .channel-item {
@@ -3156,5 +3838,74 @@ button:disabled {
   .cashier-retain-leave,
   .cashier-retain-stay {
     width: 100%;
+  }
+
+  .paypal-page {
+    width: 100%;
+    padding: 22px 18px 20px;
+  }
+
+  .paypal-page-actions {
+    flex-direction: column;
+  }
+
+  .paypal-page-back,
+  .paypal-page-paid {
+    width: 100%;
+  }
+
+  .konbini-page {
+    width: 100%;
+    max-height: calc(100vh - 16px);
+  }
+
+  .konbini-page-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+  }
+
+  .konbini-page-summary,
+  .konbini-page-detail {
+    padding: 20px 16px;
+  }
+
+  .konbini-page-summary-amount {
+    font-size: 36px;
+  }
+
+  .konbini-page-brand-text {
+    font-size: 22px;
+  }
+
+  .konbini-page-code-value {
+    font-size: 24px;
+  }
+
+  .konbini-page-stores {
+    grid-template-columns: 1fr;
+  }
+
+  .konbini-page-actions {
+    flex-direction: column;
+  }
+
+  .konbini-return-card {
+    width: min(320px, 100%);
+    padding: 24px 18px 18px;
+  }
+
+  .konbini-return-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 14px;
+    font-size: 30px;
+  }
+
+  .pay-toast {
+    top: 72px;
+    min-width: 0;
+    width: calc(100vw - 24px);
   }
 }

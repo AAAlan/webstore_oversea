@@ -4,6 +4,7 @@ import {
   CONSUMER_PRODUCT_CATEGORIES,
   CONSUMER_PRODUCTS,
   DEFAULT_MALL_CONFIG,
+  DEFAULT_GAME_DELIVERY_CONFIG,
   INITIAL_BAN_RECORDS,
   INITIAL_MONTHLY_SPENT,
   INITIAL_PRODUCT_CATEGORIES,
@@ -26,8 +27,56 @@ import {
   computeRemainingDays,
   deepClone,
   formatRemainingDaysLabel,
+  formatRemainingTimeLabel,
   normalizeMallConfig,
 } from "./utils.js";
+import { DEFAULT_LANGUAGE_OPTIONS } from "../shared/language-presets.js";
+
+function normalizeGameDeliveryConfig(input = {}, fallback = DEFAULT_GAME_DELIVERY_CONFIG) {
+  const source = input ?? {};
+  const normalizeWhitelist = (items) =>
+    (Array.isArray(items) ? items : []).map((item, index) => ({
+      id: typeof item.id === "string" ? item.id : `wl-${Date.now()}-${index}`,
+      pattern:
+        typeof item.pattern === "string"
+          ? item.pattern.trim()
+          : typeof item.value === "string"
+            ? item.value.trim()
+            : "",
+      note: typeof item.note === "string" ? item.note.trim() : "",
+    }));
+  const normalizeForwardRules = (items) =>
+    (Array.isArray(items) ? items : []).map((item, index) => ({
+      id: typeof item.id === "string" ? item.id : `fw-${Date.now()}-${index}`,
+      url: typeof item.url === "string" ? item.url.trim() : "",
+      notifyId: typeof item.notifyId === "string" ? item.notifyId.trim() : "",
+      userIds: Array.isArray(item.userIds)
+        ? item.userIds.map((value) => String(value).trim()).filter(Boolean)
+        : typeof item.userIds === "string"
+          ? item.userIds
+              .split(/[,\n]/)
+              .map((value) => value.trim())
+              .filter(Boolean)
+          : [],
+    }));
+
+  return {
+    gameId:
+      typeof source.gameId === "string" && source.gameId.trim()
+        ? source.gameId.trim()
+        : fallback.gameId,
+    creditUrl:
+      typeof source.creditUrl === "string" && source.creditUrl.trim()
+        ? source.creditUrl.trim()
+        : fallback.creditUrl,
+    secretKey:
+      typeof source.secretKey === "string" && source.secretKey.trim()
+        ? source.secretKey.trim()
+        : fallback.secretKey,
+    whitelist: normalizeWhitelist(source.whitelist ?? fallback.whitelist),
+    forwardRules: normalizeForwardRules(source.forwardRules ?? fallback.forwardRules),
+  };
+}
 
 function createInitialState() {
   return {
@@ -46,6 +95,10 @@ function createInitialState() {
     productsPublishedAt: new Date().toISOString(),
     translationsDraftUpdatedAt: null,
     translationsPublishedAt: new Date().toISOString(),
+    gameDeliveryDraft: deepClone(DEFAULT_GAME_DELIVERY_CONFIG),
+    gameDeliveryPublished: deepClone(DEFAULT_GAME_DELIVERY_CONFIG),
+    gameDeliveryDraftUpdatedAt: null,
+    gameDeliveryPublishedAt: new Date().toISOString(),
     consumerMallConfig: deepClone(CONSUMER_MALL_CONFIG),
     consumerProducts: deepClone(CONSUMER_PRODUCTS),
     banRecords: deepClone(INITIAL_BAN_RECORDS),
@@ -108,6 +161,10 @@ function persist() {
     productsPublishedAt: state.productsPublishedAt,
     translationsDraftUpdatedAt: state.translationsDraftUpdatedAt,
     translationsPublishedAt: state.translationsPublishedAt,
+    gameDeliveryDraft: state.gameDeliveryDraft,
+    gameDeliveryPublished: state.gameDeliveryPublished,
+    gameDeliveryDraftUpdatedAt: state.gameDeliveryDraftUpdatedAt,
+    gameDeliveryPublishedAt: state.gameDeliveryPublishedAt,
     banRecords: state.banRecords,
     monthlyRechargeSpent: state.monthlyRechargeSpent,
     purchaseCounts: state.purchaseCounts,
@@ -185,14 +242,14 @@ function getRemaining(accountId, roleId, product) {
 function resolvePromoTag(product, soldOut) {
   if (soldOut) return null;
   const tag = product.tag ?? "";
-  if (/剩余\d+天/.test(tag)) return null;
+  if (/剩余\d+(?:天|小时)/.test(tag)) return null;
   if (tag) return tag;
   if (product.firstBonus && product.category === "gem") return "首充双倍";
   return null;
 }
 
 function resolveTimeLimit(product) {
-  const fromEnd = formatRemainingDaysLabel(computeRemainingDays(product.timeLimitEnd));
+  const fromEnd = formatRemainingTimeLabel(product.timeLimitEnd);
   if (fromEnd && fromEnd !== "活动已结束") return fromEnd;
   if (product.expiresInDays != null) return formatRemainingDaysLabel(product.expiresInDays);
   return null;
@@ -364,6 +421,40 @@ function getTranslationsPublishMeta() {
   );
 }
 
+function getGameDeliveryPublishMeta() {
+  return buildPublishMeta(
+    state.gameDeliveryDraft,
+    state.gameDeliveryPublished,
+    state.gameDeliveryDraftUpdatedAt,
+    state.gameDeliveryPublishedAt,
+  );
+}
+
+function getTranslationLocaleCodes() {
+  const locales = new Set(DEFAULT_LANGUAGE_OPTIONS.map((item) => item.code));
+  for (const source of [state.mallConfigDraft, state.mallConfigPublished, state.consumerMallConfig]) {
+    for (const locale of Object.keys(source?.languageMeta ?? {})) locales.add(locale);
+    for (const locale of Object.keys(source?.languages ?? {})) locales.add(locale);
+  }
+  return Array.from(locales);
+}
+
+function normalizeTranslationValues(input = {}, fallback = {}) {
+  const values = {};
+  for (const locale of getTranslationLocaleCodes()) {
+    values[locale] =
+      typeof input[locale] === "string"
+        ? input[locale]
+        : typeof fallback[locale] === "string"
+          ? fallback[locale]
+          : "";
+  }
+  for (const [locale, value] of Object.entries(input ?? {})) {
+    if (values[locale] == null) values[locale] = typeof value === "string" ? value : "";
+  }
+  return values;
+}
+
 function buildProductFromDto(id, goodsId, dto) {
   return {
     id,
@@ -444,7 +535,6 @@ export function getConsumerTranslations() {
 
 export function getProductCategories() {
   return deepClone(CONSUMER_PRODUCT_CATEGORIES)
-    .filter((item) => item.enabled)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -465,6 +555,9 @@ export function getMall(accountId, roleId) {
 
   const rechargeLimit = getRechargeLimit(accountId.trim());
   const productsWithAgeLimit = products.map((product) => {
+    if (rechargeLimit?.ageTier === "jp-under16" || rechargeLimit?.ageTier === "jp-16to20") {
+      return product;
+    }
     const ageLimitReason = getProductAgeLimitReason(rechargeLimit, product.price, 1);
     if (!ageLimitReason) return product;
     return {
@@ -557,6 +650,7 @@ export function getPublishStatus() {
     products: getProductsPublishMeta(),
     productCategories: getProductCategoriesPublishMeta(),
     translations: getTranslationsPublishMeta(),
+    gameDelivery: getGameDeliveryPublishMeta(),
   };
 }
 
@@ -609,18 +703,13 @@ export function saveTranslationEntry(dto) {
     badRequest("多语言 Key 仅支持小写字母、数字、下划线和点号");
   }
   const current = state.translationsDraft[key] ?? {};
+  const values = normalizeTranslationValues(dto.values ?? {}, current.values ?? {});
   state.translationsDraft[key] = {
     key,
     category: dto.category?.trim() || current.category || "页面文案",
     usage: dto.usage?.trim() || current.usage || "",
-    sourceText: dto.sourceText ?? dto.values?.["zh-CN"] ?? current.sourceText ?? "",
-    values: {
-      "zh-CN": dto.values?.["zh-CN"] ?? "",
-      en: dto.values?.en ?? "",
-      ko: dto.values?.ko ?? "",
-      ja: dto.values?.ja ?? "",
-      "zh-TW": dto.values?.["zh-TW"] ?? "",
-    },
+    sourceText: dto.sourceText ?? values["zh-CN"] ?? current.sourceText ?? "",
+    values,
     updatedAt: new Date().toISOString(),
   };
   state.translationsDraftUpdatedAt = new Date().toISOString();
@@ -636,6 +725,32 @@ export function publishTranslations() {
     count: Object.keys(state.translationsPublished).length,
     meta: getTranslationsPublishMeta(),
   };
+}
+
+export function getAdminGameDeliveryConfig() {
+  return {
+    draft: normalizeGameDeliveryConfig(state.gameDeliveryDraft),
+    published: normalizeGameDeliveryConfig(state.gameDeliveryPublished),
+    meta: getGameDeliveryPublishMeta(),
+  };
+}
+
+export function saveGameDeliveryDraft(dto) {
+  const normalized = normalizeGameDeliveryConfig(dto, DEFAULT_GAME_DELIVERY_CONFIG);
+  if (!normalized.gameId) badRequest("请填写 GameID");
+  if (!normalized.creditUrl) badRequest("请填写加币地址");
+  if (!normalized.secretKey) badRequest("请填写加币密钥");
+  state.gameDeliveryDraft = normalized;
+  state.gameDeliveryDraftUpdatedAt = new Date().toISOString();
+  persist();
+  return { draft: state.gameDeliveryDraft, meta: getGameDeliveryPublishMeta() };
+}
+
+export function publishGameDelivery() {
+  state.gameDeliveryPublished = deepClone(normalizeGameDeliveryConfig(state.gameDeliveryDraft));
+  state.gameDeliveryPublishedAt = new Date().toISOString();
+  persist();
+  return { published: state.gameDeliveryPublished, meta: getGameDeliveryPublishMeta() };
 }
 
 export function getProducts() {
@@ -702,7 +817,9 @@ export function getGameGoodsCatalog() {
 
 export function getAdminProductCategories() {
   return {
-    items: [...state.productCategoriesDraft].sort((a, b) => a.sortOrder - b.sortOrder),
+    items: [...state.productCategoriesDraft]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(({ enabled, ...item }) => item),
     meta: getProductCategoriesPublishMeta(),
   };
 }
@@ -723,7 +840,6 @@ export function saveProductCategoriesDraft(items) {
     id: item.id.trim(),
     label: item.label.trim(),
     sortOrder: item.sortOrder ?? index * 10,
-    enabled: item.enabled !== false,
   }));
   persist();
   return { ok: true, count: state.productCategoriesDraft.length };

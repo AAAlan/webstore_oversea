@@ -1,74 +1,61 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { adminApi } from "../api.js";
 import ImageUploadField from "../components/ImageUploadField.vue";
-import MultilingualField from "../components/MultilingualField.vue";
 import PublishBar from "../components/PublishBar.vue";
 import RichTextEditor from "../components/RichTextEditor.vue";
 import { normalizeRechargeTipsForForm } from "../lib/recharge-tips.js";
+import { useAutosave } from "../lib/useAutosave.js";
+import {
+  DEFAULT_LANGUAGE_OPTIONS,
+  buildLocaleOptions,
+  getDefaultLanguageConfig,
+  getFooterFieldDefinitions,
+} from "../../../shared/language-presets.js";
 
 const props = defineProps({ loading: Boolean });
 const emit = defineEmits(["toast", "loading", "status-change"]);
 
-const languageOptions = [
-  { code: "zh-CN", label: "简中" },
-  { code: "zh-TW", label: "繁中" },
-  { code: "en", label: "英语" },
-  { code: "ja", label: "日语" },
-  { code: "ko", label: "韩语" },
+const defaultBannerTemplates = [
+  {
+    id: "banner-1",
+    title: "春季活动",
+    imageUrl: "",
+    linkUrl: "https://www.happyelements.com/",
+    enabled: true,
+    sortOrder: 1,
+  },
 ];
-
-const defaultLanguageValues = {
-  "zh-CN": { gameName: "终末地", footerDisclaimer: "业务内容请以游戏内信息为准。请合理安排游戏时间，适度消费。" },
-  "zh-TW": { gameName: "終末地", footerDisclaimer: "業務內容請以遊戲內資訊為準。請合理安排遊戲時間，適度消費。" },
-  en: { gameName: "Arknights: Endfield", footerDisclaimer: "In-game information prevails. Please play responsibly and spend moderately." },
-  ja: { gameName: "アークナイツ：エンドフィールド", footerDisclaimer: "内容はゲーム内表示を基準とします。適度にお楽しみください。" },
-  ko: { gameName: "명일방주: 엔드필드", footerDisclaimer: "상품 내용은 게임 내 정보를 기준으로 합니다. 적절한 이용과 소비를 부탁드립니다." },
-};
-
-const footerLinkDefaults = {
-  "zh-CN": {
-    termsLabel: "用户利用规则",
-    privacyLabel: "隐私政策",
-    contactLabel: "联系我们",
-  },
-  "zh-TW": {
-    termsLabel: "服務條款",
-    privacyLabel: "隱私政策",
-    contactLabel: "聯絡我們",
-  },
-  en: {
-    termsLabel: "TERMS OF SERVICE",
-    privacyLabel: "PRIVACY POLICY",
-    contactLabel: "CONTACT US",
-  },
-  ja: {
-    termsLabel: "ユーザー利用規約",
-    privacyLabel: "プライバシーポリシー",
-    contactLabel: "お問い合わせ",
-    rulesLabel: "資金決済法に基づく表示",
-    paymentLabel: "資金決済法に基づく表示",
-    ageLabel: "12歳以上",
-  },
-  ko: {
-    termsLabel: "서비스 이용약관",
-    privacyLabel: "개인 정보 처리 방침",
-    contactLabel: "문의하기",
-  },
-};
 
 const config = reactive(emptyConfig());
 const publishMeta = ref(null);
 const activeLocale = ref("zh-CN");
-const translationMap = ref({});
+const showLanguageManager = ref(false);
+const newLanguageCode = ref("");
+const languageManagerDraft = ref([]);
+const autosave = useAutosave({
+  watchSource: config,
+  snapshot: () => JSON.stringify(buildPayload()),
+  save: () => persistDraft({ quiet: true }),
+  enabled: computed(() => !props.loading),
+  delay: 900,
+});
+
+const localeList = computed(() =>
+  buildLocaleOptions({
+    languageMeta: config.languageMeta,
+    languages: config.languages,
+  }),
+);
 
 function emptyConfig() {
   return {
     game: { name: "", iconUrl: "" },
-    banners: [],
+    banners: defaultBannerTemplates.map((banner) => ({ ...banner })),
     header: {
       publisherLogoUrl: "",
       customerServiceUrl: "",
+      rechargeCenterName: "",
       rechargeTips: { contentHtml: "" },
     },
     footer: {
@@ -80,8 +67,11 @@ function emptyConfig() {
       icpText: "",
       footerLinks: {},
     },
+    languageMeta: Object.fromEntries(
+      DEFAULT_LANGUAGE_OPTIONS.map((language) => [language.code, { label: language.label }]),
+    ),
     languages: Object.fromEntries(
-      languageOptions.map((language) => [
+      DEFAULT_LANGUAGE_OPTIONS.map((language) => [
         language.code,
         emptyLanguageConfig(language.code),
       ]),
@@ -90,14 +80,21 @@ function emptyConfig() {
 }
 
 function emptyLanguageConfig(locale = "zh-CN") {
-  const fallback = defaultLanguageValues[locale] ?? defaultLanguageValues["zh-CN"];
+  const fallback = getDefaultLanguageConfig(locale);
   return {
     gameName: fallback.gameName,
+    banners: defaultBannerTemplates.map((banner) => ({ ...banner })),
+    header: {
+      publisherLogoUrl: "",
+      customerServiceUrl: "",
+      rechargeTips: { contentHtml: "" },
+    },
+    footer: {
+      publisherLogoUrl: "",
+    },
     rechargeTips: { contentHtml: "" },
     footerDisclaimer: fallback.footerDisclaimer,
-    footerLinks: {
-      ...footerLinkDefaults[locale],
-    },
+    footerLinks: { ...fallback.footerLinks },
     copyrightText: "© GRYPHLINE. All rights reserved.",
     privacyPolicyUrl: "https://www.happyelements.com/",
     userAgreementUrl: "https://www.happyelements.com/",
@@ -106,11 +103,39 @@ function emptyLanguageConfig(locale = "zh-CN") {
   };
 }
 
-function normalizeLanguageForForm(language, locale) {
+function normalizeBannerItem(banner, fallback = {}) {
+  return {
+    id: banner?.id ?? fallback.id ?? `banner-${Date.now()}`,
+    title: typeof banner?.title === "string" ? banner.title : fallback.title ?? "",
+    imageUrl: typeof banner?.imageUrl === "string" ? banner.imageUrl : fallback.imageUrl ?? "",
+    linkUrl: typeof banner?.linkUrl === "string" ? banner.linkUrl : fallback.linkUrl ?? "",
+    enabled: typeof banner?.enabled === "boolean" ? banner.enabled : fallback.enabled ?? true,
+    sortOrder: Number.isFinite(banner?.sortOrder) ? banner.sortOrder : fallback.sortOrder ?? 0,
+  };
+}
+
+function normalizeBannerList(banners, fallback = []) {
+  const source = Array.isArray(banners) ? banners : fallback;
+  return (source ?? []).map((banner, index) =>
+    normalizeBannerItem(banner, fallback[index] ?? { sortOrder: index + 1, enabled: true }),
+  );
+}
+
+function normalizeLanguageForForm(language, locale, fallbackBanners = []) {
   const fallback = emptyLanguageConfig(locale);
   return {
     ...fallback,
     ...(language ?? {}),
+    banners: normalizeBannerList(language?.banners, fallbackBanners.length ? fallbackBanners : fallback.banners),
+    header: {
+      ...fallback.header,
+      ...(language?.header ?? {}),
+      rechargeTips: normalizeRechargeTipsForForm(language?.header?.rechargeTips),
+    },
+    footer: {
+      ...fallback.footer,
+      ...(language?.footer ?? {}),
+    },
     rechargeTips: normalizeRechargeTipsForForm(language?.rechargeTips),
   };
 }
@@ -122,65 +147,141 @@ function emptyBanner() {
     imageUrl: "",
     linkUrl: "",
     enabled: true,
-    sortOrder: config.banners.length + 1,
+    sortOrder: bannerListFor(activeLocale.value).length + 1,
   };
+}
+
+function bannerListFor(locale = activeLocale.value) {
+  return config.languages[locale]?.banners ?? config.banners;
 }
 
 function applyDraft(draft) {
+  const baseBanners = normalizeBannerList(draft.banners, defaultBannerTemplates);
   const languages = Object.fromEntries(
-    languageOptions.map((language) => [
+    DEFAULT_LANGUAGE_OPTIONS.map((language) => [
       language.code,
-      normalizeLanguageForForm(draft.languages?.[language.code], language.code),
+      normalizeLanguageForForm(draft.languages?.[language.code], language.code, baseBanners),
     ]),
   );
+  for (const [locale, item] of Object.entries(draft.languages ?? {})) {
+    if (languages[locale]) continue;
+    languages[locale] = normalizeLanguageForForm(item, locale, baseBanners);
+  }
   Object.assign(config, {
     game: { ...draft.game, iconUrl: draft.game.iconUrl ?? "" },
-    banners: draft.banners.map((b) => ({ ...b })),
+    banners: baseBanners.map((b) => ({ ...b })),
     header: {
       publisherLogoUrl: draft.header.publisherLogoUrl ?? "",
       customerServiceUrl: draft.header.customerServiceUrl ?? "",
+      rechargeCenterName: draft.header.rechargeCenterName ?? "",
       rechargeTips: normalizeRechargeTipsForForm(draft.header.rechargeTips),
     },
     footer: { ...draft.footer },
+    languageMeta: {
+      ...Object.fromEntries(
+        DEFAULT_LANGUAGE_OPTIONS.map((language) => [language.code, { label: language.label }]),
+      ),
+      ...(draft.languageMeta ?? {}),
+    },
     languages,
   });
-}
-
-async function loadTranslations() {
-  try {
-    const data = await adminApi.translations.list();
-    translationMap.value = Object.fromEntries(
-      (data.items ?? []).map((item) => [item.key, item]),
-    );
-  } catch {
-    translationMap.value = {};
+  for (const code of Object.keys(config.languages)) {
+    if (!config.languageMeta[code]) {
+      config.languageMeta[code] = { label: code };
+    }
+  }
+  if (!config.languages[activeLocale.value]) {
+    activeLocale.value = Object.keys(config.languages)[0] ?? "zh-CN";
   }
 }
 
-function valuesFor(key, fallback = "") {
-  return {
-    "zh-CN": fallback,
-    ...(translationMap.value[key]?.values ?? {}),
-  };
+function localeLabel(locale) {
+  return config.languageMeta?.[locale]?.label ?? locale;
 }
 
-async function saveTranslation(entry) {
-  try {
-    await adminApi.translations.save(entry);
-    await loadTranslations();
-    emit("status-change");
-    emit("toast", "success", "多语言文案已保存");
-  } catch (error) {
-    emit("toast", "error", error.message);
-  }
+const localeStatus = (locale) => {
+  const language = config.languages[locale];
+  if (!language) return "未配置";
+  const hasContent =
+    String(language.gameName ?? "").trim() ||
+    (language.banners?.length ?? 0) > 0 ||
+    String(language.rechargeTips?.contentHtml ?? "").trim() ||
+    String(language.footerDisclaimer ?? "").trim() ||
+    String(language.copyrightText ?? "").trim() ||
+    String(language.privacyPolicyUrl ?? "").trim() ||
+    String(language.userAgreementUrl ?? "").trim() ||
+    String(language.contactText ?? "").trim() ||
+    String(language.icpText ?? "").trim() ||
+    Object.values(language.footerLinks ?? {}).some((value) => String(value ?? "").trim());
+  return hasContent ? "已配置" : "未配置";
+};
+
+function openLanguageManager() {
+  showLanguageManager.value = true;
+  newLanguageCode.value = "";
+  languageManagerDraft.value = localeList.value.map((language) => ({
+    code: language.code,
+    label: localeLabel(language.code),
+  }));
 }
+
+function closeLanguageManager() {
+  showLanguageManager.value = false;
+  newLanguageCode.value = "";
+  languageManagerDraft.value = [];
+}
+
+const availableLanguageOptions = computed(() =>
+  DEFAULT_LANGUAGE_OPTIONS.filter(
+    (language) => !languageManagerDraft.value.some((item) => item.code === language.code),
+  ),
+);
+
+function addLanguageEntry() {
+  const code = newLanguageCode.value.trim();
+  if (!code || languageManagerDraft.value.some((item) => item.code === code)) return;
+  const option = DEFAULT_LANGUAGE_OPTIONS.find((language) => language.code === code);
+  languageManagerDraft.value = [
+    ...languageManagerDraft.value,
+    { code, label: option?.label ?? code },
+  ];
+  newLanguageCode.value = "";
+}
+
+function removeLanguage(locale) {
+  if (languageManagerDraft.value.length <= 1) return;
+  languageManagerDraft.value = languageManagerDraft.value.filter((item) => item.code !== locale);
+}
+
+function footerFieldDefsFor(locale) {
+  return getFooterFieldDefinitions(locale, config.languages[locale]?.footerLinks ?? {});
+}
+
+const footerProtectedKeys = new Set([
+  "termsLabel",
+  "privacyLabel",
+  "contactLabel",
+  "rulesLabel",
+  "paymentLabel",
+  "ageLabel",
+]);
+
+function removeFooterField(locale, key) {
+  if (footerProtectedKeys.has(key)) return;
+  delete config.languages[locale]?.footerLinks?.[key];
+}
+
+const activeFooterLanguage = computed(
+  () => config.languages[activeLocale.value] ?? config.languages["zh-CN"] ?? null,
+);
 
 async function load() {
   emit("loading", true);
   try {
-    const [data] = await Promise.all([adminApi.mallConfig.get(), loadTranslations()]);
+    const data = await adminApi.mallConfig.get();
     applyDraft(data.draft);
     publishMeta.value = data.meta;
+    autosave.markClean(JSON.stringify(buildPayload()));
     emit("status-change");
   } catch (e) {
     emit("toast", "error", e.message);
@@ -190,13 +291,19 @@ async function load() {
 }
 
 function buildPayload() {
+  const footerLanguage =
+    config.languages[activeLocale.value] ?? config.languages["zh-CN"] ?? emptyLanguageConfig();
+  const publishedBanners = normalizeBannerList(
+    config.languages[activeLocale.value]?.banners ?? bannerListFor(activeLocale.value),
+    defaultBannerTemplates,
+  );
   return {
     game: {
       name: config.game.name.trim(),
       icon: "",
       iconUrl: config.game.iconUrl?.trim() || null,
     },
-    banners: config.banners.map((b, i) => ({
+    banners: publishedBanners.map((b, i) => ({
       ...b,
       title: b.title.trim(),
       imageUrl: b.imageUrl.trim(),
@@ -206,61 +313,112 @@ function buildPayload() {
     header: {
       publisherLogoUrl: config.header.publisherLogoUrl?.trim() || null,
       customerServiceUrl: config.header.customerServiceUrl.trim(),
+      rechargeCenterName: config.header.rechargeCenterName.trim(),
       rechargeTips: {
         contentHtml: config.header.rechargeTips.contentHtml,
       },
     },
     footer: {
-      publisherLogoUrl: config.footer.publisherLogoUrl?.trim() || null,
-      copyrightText: config.footer.copyrightText.trim(),
-      privacyPolicyUrl: config.footer.privacyPolicyUrl.trim(),
-      userAgreementUrl: config.footer.userAgreementUrl.trim(),
-      contactText: config.footer.contactText.trim(),
-      icpText: config.footer.icpText.trim(),
+      publisherLogoUrl: footerLanguage.footer.publisherLogoUrl?.trim() || null,
+      copyrightText: footerLanguage.copyrightText.trim(),
+      privacyPolicyUrl: footerLanguage.privacyPolicyUrl.trim(),
+      userAgreementUrl: footerLanguage.userAgreementUrl.trim(),
+      contactText: footerLanguage.contactText.trim(),
+      icpText: footerLanguage.icpText.trim(),
     },
+    languageMeta: config.languageMeta,
     languages: Object.fromEntries(
-      languageOptions.map((language) => {
-        const item = config.languages[language.code] ?? emptyLanguageConfig(language.code);
-        return [
-          language.code,
-          {
-            gameName: item.gameName.trim(),
-            rechargeTips: {
-              contentHtml: item.rechargeTips.contentHtml,
-            },
-            copyrightText: item.copyrightText.trim(),
-            privacyPolicyUrl: item.privacyPolicyUrl.trim(),
-            userAgreementUrl: item.userAgreementUrl.trim(),
-            contactText: item.contactText.trim(),
-            icpText: item.icpText.trim(),
-            footerDisclaimer: item.footerDisclaimer.trim(),
-            footerLinks: {
-              termsLabel: item.footerLinks.termsLabel.trim(),
-              privacyLabel: item.footerLinks.privacyLabel.trim(),
-              contactLabel: item.footerLinks.contactLabel.trim(),
-              rulesLabel: item.footerLinks.rulesLabel?.trim?.() ?? "",
-              paymentLabel: item.footerLinks.paymentLabel?.trim?.() ?? "",
-              ageLabel: item.footerLinks.ageLabel?.trim?.() ?? "",
-            },
+      Object.entries(config.languages).map(([locale, item]) => [
+        locale,
+        {
+          gameName: item.gameName.trim(),
+          banners: normalizeBannerList(item.banners, publishedBanners).map((b, i) => ({
+            ...b,
+            title: b.title.trim(),
+            imageUrl: b.imageUrl.trim(),
+            linkUrl: b.linkUrl.trim(),
+            sortOrder: b.sortOrder ?? i + 1,
+          })),
+          rechargeTips: {
+            contentHtml: item.rechargeTips.contentHtml,
           },
-        ];
-      }),
+          copyrightText: item.copyrightText.trim(),
+          privacyPolicyUrl: item.privacyPolicyUrl.trim(),
+          userAgreementUrl: item.userAgreementUrl.trim(),
+          contactText: item.contactText.trim(),
+          icpText: item.icpText.trim(),
+          footerDisclaimer: item.footerDisclaimer.trim(),
+          footerLinks: Object.fromEntries(
+            Object.entries(item.footerLinks ?? {}).map(([key, value]) => [
+              key,
+              String(value ?? "").trim(),
+            ]),
+          ),
+        },
+      ]),
     ),
   };
 }
 
-async function saveDraft() {
-  emit("loading", true);
+async function persistDraft({ quiet = false } = {}) {
+  if (!quiet) emit("loading", true);
   try {
     const result = await adminApi.mallConfig.saveDraft(buildPayload());
     publishMeta.value = result.meta;
     emit("status-change");
-    emit("toast", "success", "草稿已保存");
+    autosave.markClean(JSON.stringify(buildPayload()));
+    if (!quiet) emit("toast", "success", "草稿已保存");
+    return result;
   } catch (e) {
-    emit("toast", "error", e.message);
+    if (!quiet) emit("toast", "error", e.message);
+    return null;
   } finally {
-    emit("loading", false);
+    if (!quiet) emit("loading", false);
   }
+}
+
+async function saveDraft() {
+  return persistDraft({ quiet: false });
+}
+
+async function saveLanguageManager() {
+  if (!languageManagerDraft.value.length) return;
+
+  const draft = languageManagerDraft.value.map((item) => ({
+    code: item.code,
+    label: item.label?.trim() || item.code,
+  }));
+  const nextCodes = new Set(draft.map((item) => item.code));
+  const nextLanguages = {};
+  const nextLanguageMeta = {};
+  const sourceLocale = config.languages[activeLocale.value]
+    ? activeLocale.value
+    : draft[0]?.code ?? "zh-CN";
+  const sourceLanguage = config.languages[sourceLocale] ?? emptyLanguageConfig(sourceLocale);
+
+  for (const item of draft) {
+    nextLanguages[item.code] = config.languages[item.code]
+      ? config.languages[item.code]
+      : normalizeLanguageForForm(sourceLanguage, item.code, bannerListFor(sourceLocale));
+    nextLanguageMeta[item.code] = { label: item.label };
+  }
+
+  for (const code of Object.keys(config.languages)) {
+    if (!nextCodes.has(code)) delete config.languages[code];
+  }
+  Object.assign(config.languages, nextLanguages);
+
+  for (const code of Object.keys(config.languageMeta)) {
+    if (!nextCodes.has(code)) delete config.languageMeta[code];
+  }
+  Object.assign(config.languageMeta, nextLanguageMeta);
+
+  if (!config.languages[activeLocale.value]) {
+    activeLocale.value = draft[0]?.code ?? Object.keys(config.languages)[0] ?? "zh-CN";
+  }
+
+  closeLanguageManager();
+  await persistDraft({ quiet: false });
 }
 
 async function publish() {
@@ -268,7 +426,8 @@ async function publish() {
   if (!confirm("确认发布当前草稿？（暂不会同步到 C 端商城）")) return;
   emit("loading", true);
   try {
-    await adminApi.mallConfig.saveDraft(buildPayload());
+    const saved = await persistDraft({ quiet: true });
+    if (!saved) return;
     const result = await adminApi.mallConfig.publish();
     publishMeta.value = result.meta;
     emit("status-change");
@@ -280,15 +439,30 @@ async function publish() {
   }
 }
 
-function addBanner() {
-  config.banners.push(emptyBanner());
+function addBanner(locale = activeLocale.value) {
+  const list = bannerListFor(locale);
+  const next = [...list, emptyBanner()];
+  config.languages[locale].banners = next;
+  if (locale === "zh-CN") {
+    config.banners = next;
+  }
 }
 
-function removeBanner(id) {
-  config.banners = config.banners.filter((b) => b.id !== id);
+function removeBanner(id, locale = activeLocale.value) {
+  const list = bannerListFor(locale);
+  const next = list.filter((b) => b.id !== id);
+  config.languages[locale].banners = next;
+  if (locale === "zh-CN") {
+    config.banners = next;
+  }
 }
 
 onMounted(load);
+
+defineExpose({
+  load,
+  autosaveStatus: autosave.status,
+});
 </script>
 
 <template>
@@ -297,178 +471,250 @@ onMounted(load);
       :meta="publishMeta"
       :loading="props.loading"
       module-label="页面内容"
+      :autosave-state="autosave.status"
       @save-draft="saveDraft"
       @publish="publish"
     />
 
     <p class="page-intro">
-      按模块配置 C 端展示。编辑后<strong>保存草稿</strong>，确认后<strong>发布</strong>（当前仅写入后台，不同步 C 端商城）。
+      按语言版本配置页面内容。先在左侧选择语言，再编辑对应模块。编辑后<strong>保存草稿</strong>，确认后<strong>发布</strong>（当前仅写入后台，不同步 C 端商城）。
     </p>
 
-    <!-- 1. 游戏展示 -->
-    <section class="panel">
-      <div class="panel-header"><h3>1. 游戏展示</h3></div>
-      <div class="panel-body form-grid">
-        <div class="field field--full">
-          <label>游戏名称</label>
-          <MultilingualField
-            v-model="config.languages['zh-CN'].gameName"
-            label="游戏名称"
-            translation-key="mall.game.name"
-            category="页面内容"
-            usage="C端 - 游戏名称展示"
-            :translations="valuesFor('mall.game.name', config.languages['zh-CN'].gameName)"
-            @save-translations="saveTranslation"
-          />
+    <div class="content-shell">
+      <aside class="content-language-rail">
+        <div class="content-language-rail__head">
+          <div>
+            <h3>语言版本</h3>
+            <p>选择要配置的语言</p>
+          </div>
+          <button class="btn btn--ghost btn--sm" type="button" @click="openLanguageManager">
+            多语言
+          </button>
         </div>
-        <div class="field field--full">
-          <ImageUploadField
-            v-model="config.game.iconUrl"
-            label="游戏 Icon"
-            hint="建议 1:1 比例；支持 PNG、JPG、WebP、GIF"
-          />
+        <div class="content-language-list">
+          <button
+            v-for="language in localeList"
+            :key="language.code"
+            type="button"
+            class="content-language-item"
+            :class="{ active: activeLocale === language.code }"
+            @click="activeLocale = language.code"
+          >
+            <span class="content-language-item__name">{{ localeLabel(language.code) }}</span>
+            <span class="content-language-item__code">{{ language.code }}</span>
+            <span class="content-language-item__status">{{ localeStatus(language.code) }}</span>
+          </button>
         </div>
-      </div>
-    </section>
+      </aside>
 
-    <!-- 2. 商城 Banner -->
-    <section class="panel">
-      <div class="panel-header">
-        <h3>2. 商城 Banner</h3>
-        <button class="btn btn--ghost btn--sm" type="button" @click="addBanner">添加 Banner</button>
-      </div>
-      <p class="hint panel-hint">未上传 Banner 图时 C 端显示标题占位；点击跳转 linkUrl。</p>
-      <div v-for="banner in config.banners" :key="banner.id" class="sub-card">
-        <div class="form-grid">
-          <div class="field">
-            <label>标题</label>
-            <MultilingualField
-              v-model="banner.title"
-              label="Banner 标题"
-              :translation-key="`mall.banner.${banner.id}.title`"
-              category="页面内容"
-              usage="C端 - 商城 Banner 标题"
-              :translations="valuesFor(`mall.banner.${banner.id}.title`, banner.title)"
-              @save-translations="saveTranslation"
-            />
-          </div>
-          <div class="field">
-            <label>排序</label>
-            <input v-model.number="banner.sortOrder" type="number" />
-          </div>
-          <div class="field field--full">
-            <ImageUploadField
-              v-model="banner.imageUrl"
-              label="Banner 图片"
-              hint="建议横向比例（如 16:9）；支持 PNG、JPG、WebP、GIF"
-              :preview-width="160"
-              :preview-height="90"
-            />
-          </div>
-          <div class="field field--full">
-            <label>跳转链接</label>
-            <input v-model="banner.linkUrl" />
-          </div>
-          <div class="field">
-            <label>上架</label>
-            <select v-model="banner.enabled">
-              <option :value="true">是</option>
-              <option :value="false">否</option>
-            </select>
-          </div>
+      <div class="content-workspace">
+        <div class="content-workspace__head">
+          <h2>{{ localeLabel(activeLocale) }} - 页面内容配置</h2>
+          <p>当前语言下的页面模块会独立配置，语言名称可在左侧统一管理。</p>
         </div>
-        <button class="btn btn--danger btn--sm" type="button" @click="removeBanner(banner.id)">删除</button>
-      </div>
-    </section>
 
-    <!-- 3. 页头配置 -->
-    <section class="panel">
-      <div class="panel-header"><h3>3. 页头配置</h3></div>
-      <div class="panel-body form-grid">
-        <div class="field field--full">
-          <div class="language-tabs language-tabs--compact">
-            <button
-              v-for="language in languageOptions"
-              :key="language.code"
-              type="button"
-              class="language-tab"
-              :class="{ active: activeLocale === language.code }"
-              @click="activeLocale = language.code"
-            >
-              {{ language.label }}
+        <section class="panel">
+          <div class="panel-header"><h3>1. 游戏展示</h3></div>
+          <div class="panel-body form-grid">
+            <div class="field field--full">
+              <label>游戏名称</label>
+              <input v-model="config.languages[activeLocale].gameName" />
+            </div>
+            <div class="field field--full">
+              <ImageUploadField
+                v-model="config.game.iconUrl"
+                label="游戏 Icon"
+                hint="建议 1:1 比例；支持 PNG、JPG、WebP、GIF"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>2. 商城 Banner</h3>
+              <p class="panel-subtitle">{{ localeLabel(activeLocale) }} 下的 Banner 列表</p>
+            </div>
+            <button class="btn btn--ghost btn--sm" type="button" @click="addBanner(activeLocale)">
+              添加 Banner
             </button>
           </div>
-        </div>
-        <div class="field field--full">
-          <ImageUploadField
-            v-model="config.languages[activeLocale].header.publisherLogoUrl"
-            label="发行主体 Logo"
-            hint="页头展示；建议透明底 PNG"
-          />
-        </div>
-        <div class="field field--full">
-          <label>客服中心链接</label>
-          <input v-model="config.languages[activeLocale].header.customerServiceUrl" />
-        </div>
-        <div class="field field--full">
-          <label>充值说明文案</label>
-          <RichTextEditor v-model="config.languages[activeLocale].header.rechargeTips.contentHtml" />
-        </div>
-      </div>
-    </section>
+          <p class="hint panel-hint">Banner 图片、标题和跳转链接按语言分别配置，点击编辑当前语言版本。</p>
+          <div v-for="banner in bannerListFor(activeLocale)" :key="banner.id" class="sub-card">
+            <div class="form-grid">
+              <div class="field">
+                <label>标题</label>
+                <input v-model="banner.title" />
+              </div>
+              <div class="field">
+                <label>排序</label>
+                <input v-model.number="banner.sortOrder" type="number" />
+              </div>
+              <div class="field field--full">
+                <ImageUploadField
+                  v-model="banner.imageUrl"
+                  label="Banner 图片"
+                  hint="建议横向比例（如 16:9）；支持 PNG、JPG、WebP、GIF"
+                  :preview-width="160"
+                  :preview-height="90"
+                />
+              </div>
+              <div class="field field--full">
+                <label>跳转链接</label>
+                <input v-model="banner.linkUrl" />
+              </div>
+              <div class="field">
+                <label>上架</label>
+                <select v-model="banner.enabled">
+                  <option :value="true">是</option>
+                  <option :value="false">否</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn--danger btn--sm" type="button" @click="removeBanner(banner.id, activeLocale)">
+              删除
+            </button>
+          </div>
+        </section>
 
-    <!-- 4. 页尾配置 -->
-    <section class="panel">
-      <div class="panel-header"><h3>4. 页尾配置</h3></div>
-      <div class="panel-body form-grid">
-        <div class="field field--full">
-          <ImageUploadField
-            v-model="config.languages[activeLocale].footer.publisherLogoUrl"
-            label="发行主体 Logo"
-            hint="页脚展示；建议透明底 PNG"
-          />
-        </div>
-        <div class="field field--full">
-          <div class="form-grid">
-            <div class="field">
-              <label>条款标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.termsLabel" />
+        <section class="panel">
+          <div class="panel-header"><h3>3. 页头配置</h3></div>
+          <div class="panel-body form-grid">
+            <div class="field field--full">
+              <ImageUploadField v-model="config.header.publisherLogoUrl" label="发行主体 Logo" hint="页头展示；建议透明底 PNG" />
             </div>
-            <div class="field">
-              <label>隐私标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.privacyLabel" />
+            <div class="field field--full">
+              <label>客服中心链接</label>
+              <input v-model="config.header.customerServiceUrl" />
             </div>
-            <div class="field">
-              <label>联系标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.contactLabel" />
+            <div class="field field--full">
+              <label>充值中心名称</label>
+              <input v-model="config.header.rechargeCenterName" />
             </div>
-            <div class="field">
-              <label>规则标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.rulesLabel" />
+            <div class="field field--full">
+              <label>充值说明文案</label>
+              <RichTextEditor v-model="config.header.rechargeTips.contentHtml" />
             </div>
-            <div class="field">
-              <label>支付标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.paymentLabel" />
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h3>4. 页尾配置</h3></div>
+          <div class="panel-body form-grid">
+            <div class="field field--full">
+              <div class="content-footer-locale">
+                <span>当前编辑语言：{{ localeLabel(activeLocale) }}</span>
+              </div>
             </div>
-            <div class="field">
-              <label>年龄提示标题</label>
-              <input v-model="config.languages[activeLocale].footerLinks.ageLabel" />
+            <div class="field field--full">
+              <ImageUploadField v-model="activeFooterLanguage.footer.publisherLogoUrl" label="发行主体 Logo" hint="页脚展示；建议透明底 PNG" />
+            </div>
+            <div class="field field--full">
+              <div class="footer-field-list">
+                <div class="footer-field-head">
+                  <span>字段名称</span>
+                  <span>字段值</span>
+                  <span></span>
+                </div>
+                <div
+                  v-for="field in footerFieldDefsFor(activeLocale)"
+                  :key="field.key"
+                  class="footer-field-row"
+                >
+                  <label class="footer-field-row__label">{{ field.label }}</label>
+                  <div class="footer-field-row__value">
+                    <input v-model="activeFooterLanguage.footerLinks[field.key]" />
+                  </div>
+                  <div class="footer-field-row__actions">
+                    <button
+                      v-if="field.removable"
+                      class="link-button"
+                      type="button"
+                      @click="removeFooterField(activeLocale, field.key)"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="field field--full">
               <label>版权信息文案</label>
-              <input v-model="config.languages[activeLocale].copyrightText" />
+              <input v-model="activeFooterLanguage.copyrightText" />
             </div>
             <div class="field field--full">
               <label>页尾提示文案</label>
-              <input v-model="config.languages[activeLocale].footerDisclaimer" />
+              <input v-model="activeFooterLanguage.footerDisclaimer" />
             </div>
             <div class="field field--full">
               <label>备案信息文案</label>
-              <input v-model="config.languages[activeLocale].icpText" />
+              <input v-model="activeFooterLanguage.icpText" />
             </div>
           </div>
-        </div>
+        </section>
       </div>
-    </section>
+    </div>
+
+    <div v-if="showLanguageManager" class="modal-mask" @click.self="closeLanguageManager">
+      <section class="language-manager-modal">
+        <header class="language-manager-head">
+          <h3>管理支持的语言</h3>
+          <button class="modal-close" type="button" @click="closeLanguageManager">×</button>
+        </header>
+
+        <div class="language-manager-body">
+          <div class="language-manager-section">
+            <div class="language-manager-label">当前支持的语言</div>
+            <div class="language-manager-chip-list">
+              <span
+                v-for="language in languageManagerDraft"
+                :key="language.code"
+                class="language-manager-chip"
+              >
+                <span>{{ localeLabel(language.code) }}（{{ language.code }}）</span>
+                <button
+                  type="button"
+                  class="language-manager-chip-close"
+                  :disabled="languageManagerDraft.length <= 1"
+                  @click="removeLanguage(language.code)"
+                >
+                  ×
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div class="language-manager-section">
+            <div class="language-manager-label">添加新语言</div>
+            <div class="language-manager-add">
+              <select v-model="newLanguageCode">
+                <option value="">选择要添加的语言</option>
+                <option v-for="language in availableLanguageOptions" :key="language.code" :value="language.code">
+                  {{ language.label }}（{{ language.code }}）
+                </option>
+              </select>
+              <button class="btn language-manager-add-btn" type="button" :disabled="!newLanguageCode.trim()" @click="addLanguageEntry">
+                添加
+              </button>
+            </div>
+          </div>
+
+          <div class="language-manager-notice">
+            <p>• 删除语言会同步删除该语言下的全部页面配置数据，请谨慎操作</p>
+            <p>• 至少需要保留一种语言</p>
+          </div>
+        </div>
+
+        <footer class="language-manager-footer">
+          <button class="btn btn--ghost language-manager-footer__btn" type="button" @click="closeLanguageManager">
+            取消
+          </button>
+          <button class="btn language-manager-footer__btn language-manager-footer__btn--primary" type="button" @click="saveLanguageManager">
+            保存更改
+          </button>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>

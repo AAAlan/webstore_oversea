@@ -1,9 +1,9 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
-import { clearAdminToken, getAdminToken, setAdminToken, adminApi } from "./api.js";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { clearAdminToken, getAdminRole, getAdminToken, setAdminToken, adminApi } from "./api.js";
+import PublishBar from "./components/PublishBar.vue";
 import ContentPanel from "./panels/ContentPanel.vue";
-import MarketingPanel from "./panels/MarketingPanel.vue";
-import OperationsPanel from "./panels/OperationsPanel.vue";
+import GameDeliveryPanel from "./panels/GameDeliveryPanel.vue";
 import ProductPanel from "./panels/ProductPanel.vue";
 import ProductTypePanel from "./panels/ProductTypePanel.vue";
 import TranslationPanel from "./panels/TranslationPanel.vue";
@@ -14,26 +14,20 @@ const activeTab = ref("content");
 const loading = ref(false);
 const toast = ref({ type: "", text: "" });
 
-const ordersData = ref({ reserved: true, items: [] });
+const contentPanelRef = ref(null);
 const productPanelRef = ref(null);
 const productTypePanelRef = ref(null);
+const gameDeliveryPanelRef = ref(null);
 const translationPanelRef = ref(null);
-const productSubTab = ref("list");
 const publishStatus = ref(null);
+const adminRole = computed(() => getAdminRole());
 
 const mainNavItems = [
   { id: "content", label: "页面内容管理", icon: "◫" },
   { id: "products", label: "商品管理", icon: "▣" },
+  { id: "gameDelivery", label: "游戏发货配置", icon: "↗" },
   { id: "translations", label: "多语言管理", icon: "◎" },
-  { id: "marketing", label: "营销活动管理", icon: "◎" },
 ];
-
-const ordersNav = { id: "orders", label: "订单管理", icon: "☰" };
-
-const opsMenus = [{ id: "recharge-query", label: "累充查询" }];
-
-const opsExpanded = ref(true);
-const activeOpsSub = ref("recharge-query");
 
 function showToast(type, text) {
   toast.value = { type, text };
@@ -72,17 +66,16 @@ async function loadTabData() {
     await refreshPublishStatus();
     if (activeTab.value === "products") {
       await nextTick();
-      const panelRef =
-        productSubTab.value === "types" ? productTypePanelRef : productPanelRef;
-      const loadFn = panelRef.value?.load;
-      if (typeof loadFn === "function") {
-        await loadFn.call(panelRef.value);
-      }
+      await Promise.all([
+        productTypePanelRef.value?.load?.(),
+        productPanelRef.value?.load?.(),
+      ]);
     } else if (activeTab.value === "translations") {
       await nextTick();
       await translationPanelRef.value?.load?.();
-    } else if (activeTab.value === "orders") {
-      ordersData.value = await adminApi.orders.list();
+    } else if (activeTab.value === "gameDelivery") {
+      await nextTick();
+      await gameDeliveryPanelRef.value?.load?.();
     }
   } catch (error) {
     showToast("error", error.message);
@@ -93,40 +86,11 @@ async function loadTabData() {
 
 function switchTab(id) {
   activeTab.value = id;
-  if (id === "products") {
-    productSubTab.value = "list";
-  }
   loadTabData();
 }
-
-function switchProductSub(id) {
-  productSubTab.value = id;
-  loadTabData();
-}
-
-function toggleOpsExpanded() {
-  opsExpanded.value = !opsExpanded.value;
-}
-
-function switchOpsSub(id) {
-  activeTab.value = "operations";
-  activeOpsSub.value = id;
-  if (!opsExpanded.value) {
-    opsExpanded.value = true;
-  }
-}
-
-const isOpsActive = computed(() => activeTab.value === "operations");
 
 const pageTitle = computed(() => {
-  if (activeTab.value === "operations") {
-    const sub = opsMenus.find((m) => m.id === activeOpsSub.value);
-    return sub ? `运营工具 / ${sub.label}` : "运营工具";
-  }
-  if (activeTab.value === "orders") return ordersNav.label;
-  if (activeTab.value === "products") {
-    return productSubTab.value === "types" ? "商品管理 / 商品类型" : "商品管理 / 商品列表";
-  }
+  if (activeTab.value === "products") return "商品管理";
   return mainNavItems.find((t) => t.id === activeTab.value)?.label ?? "";
 });
 
@@ -137,8 +101,115 @@ const hasGlobalPending = computed(() => {
     s.content?.hasUnpublishedChanges ||
     s.products?.hasUnpublishedChanges ||
     s.productCategories?.hasUnpublishedChanges ||
+    s.gameDelivery?.hasUnpublishedChanges ||
     s.translations?.hasUnpublishedChanges
   );
+});
+
+function latestIso(values) {
+  const timestamps = values
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => Number.isFinite(value));
+  if (!timestamps.length) return null;
+  return new Date(Math.max(...timestamps)).toISOString();
+}
+
+const productPublishMeta = computed(() => {
+  const status = publishStatus.value;
+  const metas = [status?.productCategories, status?.products].filter(Boolean);
+  if (!metas.length) return null;
+  return {
+    hasUnpublishedChanges: metas.some((meta) => meta.hasUnpublishedChanges),
+    draftUpdatedAt: latestIso(metas.map((meta) => meta.draftUpdatedAt)),
+    publishedAt: latestIso(metas.map((meta) => meta.publishedAt)),
+  };
+});
+
+function readAutosaveState(value) {
+  if (!value) return "idle";
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && "value" in value) return value.value ?? "idle";
+  return "idle";
+}
+
+function combineAutosaveStates(states) {
+  if (states.includes("saving")) return "saving";
+  if (states.includes("dirty")) return "dirty";
+  if (states.includes("clean")) return "clean";
+  return "idle";
+}
+
+const activeAutosaveState = computed(() => {
+  if (activeTab.value === "content") {
+    return readAutosaveState(contentPanelRef.value?.autosaveStatus);
+  }
+  if (activeTab.value === "products") {
+    return combineAutosaveStates([
+      readAutosaveState(productTypePanelRef.value?.autosaveStatus),
+      readAutosaveState(productPanelRef.value?.autosaveStatus),
+    ]);
+  }
+  if (activeTab.value === "gameDelivery") {
+    return readAutosaveState(gameDeliveryPanelRef.value?.autosaveStatus);
+  }
+  return "idle";
+});
+
+const topbarStatusText = computed(() => {
+  if (activeTab.value === "translations") return "";
+  const state = activeAutosaveState.value;
+  if (state === "saving") return "保存中";
+  if (state === "dirty") return "未保存";
+  if (state === "clean") return "已保存";
+  return hasGlobalPending.value ? "存在未发布变更" : "全部配置已与线上一致";
+});
+
+const topbarStatusClass = computed(() => {
+  if (activeTab.value === "translations") return "";
+  const state = activeAutosaveState.value;
+  if (state === "saving") return "saving";
+  if (state === "dirty") return "pending";
+  if (state === "clean") return "synced";
+  return hasGlobalPending.value ? "pending" : "synced";
+});
+
+async function saveProductDraft() {
+  if (activeTab.value !== "products") return;
+  const saved = await productTypePanelRef.value?.saveDraft?.();
+  if (saved) {
+    await refreshPublishStatus();
+  }
+}
+
+async function publishProductsPage() {
+  if (!productPublishMeta.value?.hasUnpublishedChanges) return;
+  if (!confirm("确认发布商品管理页面的全部草稿？")) return;
+  loading.value = true;
+  try {
+    const saved = await productTypePanelRef.value?.saveDraft?.({ quiet: true });
+    if (saved === false) {
+      showToast("error", "商品类型草稿保存失败");
+      return;
+    }
+    await Promise.all([adminApi.productCategories.publish(), adminApi.products.publish()]);
+    await refreshPublishStatus();
+    showToast("success", "商品管理已发布");
+  } catch (error) {
+    showToast("error", error.message);
+  } finally {
+    loading.value = false;
+  }
+}
+
+const visibleMainNavItems = computed(() =>
+  mainNavItems.filter((item) => item.id !== "gameDelivery" || adminRole.value === "admin"),
+);
+
+watch(adminRole, () => {
+  if (activeTab.value === "gameDelivery" && adminRole.value !== "admin") {
+    activeTab.value = "content";
+  }
 });
 
 onMounted(() => {
@@ -169,7 +240,7 @@ onMounted(() => {
       </div>
       <div class="sidebar-nav">
         <button
-          v-for="tab in mainNavItems"
+          v-for="tab in visibleMainNavItems"
           :key="tab.id"
           type="button"
           class="nav-item"
@@ -191,40 +262,14 @@ onMounted(() => {
             class="nav-dot"
           />
           <span
+            v-if="tab.id === 'gameDelivery' && publishStatus?.gameDelivery?.hasUnpublishedChanges"
+            class="nav-dot"
+          />
+          <span
             v-if="tab.id === 'translations' && publishStatus?.translations?.hasUnpublishedChanges"
             class="nav-dot"
           />
         </button>
-
-        <button
-          type="button"
-          class="nav-item"
-          :class="{ active: activeTab === ordersNav.id }"
-          @click="switchTab(ordersNav.id)"
-        >
-          <span class="nav-icon" aria-hidden="true">{{ ordersNav.icon }}</span>
-          <span class="nav-item-label">{{ ordersNav.label }}</span>
-        </button>
-
-        <div class="nav-group" :class="{ expanded: opsExpanded, 'has-active': isOpsActive }">
-          <button type="button" class="nav-group-head" @click="toggleOpsExpanded">
-            <span class="nav-icon" aria-hidden="true">⚙</span>
-            <span class="nav-group-label">运营工具</span>
-            <span class="nav-chevron" :class="{ up: opsExpanded }" aria-hidden="true">›</span>
-          </button>
-          <div v-show="opsExpanded" class="nav-group-children">
-            <button
-              v-for="sub in opsMenus"
-              :key="sub.id"
-              type="button"
-              class="nav-sub-item"
-              :class="{ active: isOpsActive && activeOpsSub === sub.id }"
-              @click="switchOpsSub(sub.id)"
-            >
-              {{ sub.label }}
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="sidebar-footer">
@@ -239,19 +284,16 @@ onMounted(() => {
         <div class="topbar-breadcrumb">
           充值商城 / <strong>{{ pageTitle }}</strong>
         </div>
-        <div class="topbar-status">
-          <span class="dot" :class="{ pending: hasGlobalPending }" />
-          {{
-            hasGlobalPending
-              ? "存在未发布变更"
-              : "全部配置已与线上一致"
-          }}
+        <div v-if="activeTab !== 'translations'" class="topbar-status">
+          <span class="dot" :class="topbarStatusClass" />
+          {{ topbarStatusText }}
         </div>
       </header>
 
       <main class="main">
         <ContentPanel
           v-if="activeTab === 'content'"
+          ref="contentPanelRef"
           :loading="loading"
           @toast="showToast"
           @loading="setLoading"
@@ -259,35 +301,22 @@ onMounted(() => {
         />
 
         <template v-if="activeTab === 'products'">
-          <div class="sub-tabs">
-            <button
-              type="button"
-              class="sub-tab"
-              :class="{ active: productSubTab === 'list' }"
-              @click="switchProductSub('list')"
-            >
-              商品列表
-            </button>
-            <button
-              type="button"
-              class="sub-tab"
-              :class="{ active: productSubTab === 'types' }"
-              @click="switchProductSub('types')"
-            >
-              商品类型
-            </button>
-          </div>
-          <ProductPanel
-            v-if="productSubTab === 'list'"
-            ref="productPanelRef"
+          <PublishBar
+            :meta="productPublishMeta"
+            :loading="loading"
+            module-label="商品管理"
+            @save-draft="saveProductDraft"
+            @publish="publishProductsPage"
+          />
+          <ProductTypePanel
+            ref="productTypePanelRef"
             :loading="loading"
             @toast="showToast"
             @loading="setLoading"
             @status-change="refreshPublishStatus"
           />
-          <ProductTypePanel
-            v-else
-            ref="productTypePanelRef"
+          <ProductPanel
+            ref="productPanelRef"
             :loading="loading"
             @toast="showToast"
             @loading="setLoading"
@@ -295,7 +324,14 @@ onMounted(() => {
           />
         </template>
 
-        <MarketingPanel v-if="activeTab === 'marketing'" />
+        <GameDeliveryPanel
+          v-if="activeTab === 'gameDelivery' && adminRole === 'admin'"
+          ref="gameDeliveryPanelRef"
+          :loading="loading"
+          @toast="showToast"
+          @loading="setLoading"
+          @status-change="refreshPublishStatus"
+        />
 
         <TranslationPanel
           v-if="activeTab === 'translations'"
@@ -306,79 +342,12 @@ onMounted(() => {
           @status-change="refreshPublishStatus"
         />
 
-        <OperationsPanel
-          v-if="activeTab === 'operations'"
-          :sub="activeOpsSub"
-        />
-
-        <template v-if="activeTab === 'orders'">
-          <p class="page-intro">订单管理能力预留，以下为演示环境产生的订单。</p>
-          <section class="panel reserved-panel">
-            <div class="reserved-badge">功能预留</div>
-            <h3>订单管理</h3>
-            <p class="hint">{{ ordersData.message }}</p>
-          </section>
-          <section class="panel">
-            <div class="panel-header"><h3>演示订单列表</h3></div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>订单号</th>
-                    <th>账号</th>
-                    <th>商品</th>
-                    <th>金额</th>
-                    <th>状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="o in ordersData.items" :key="o.orderId">
-                    <td><code>{{ o.orderId }}</code></td>
-                    <td>{{ o.accountId }}</td>
-                    <td>{{ o.productName }}</td>
-                    <td>￥{{ o.amount }}</td>
-                    <td>
-                      <span class="tag" :class="o.status === 'paid' ? 'tag--ok' : ''">
-                        {{ o.status === "paid" ? "已支付" : "待支付" }}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="!ordersData.items?.length">
-                    <td colspan="5" class="muted">暂无订单</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </template>
       </main>
     </div>
   </div>
 </template>
 
 <style scoped>
-.sub-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.sub-tab {
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-
-.sub-tab.active {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: #f5f5ff;
-}
-
 .nav-dot {
   width: 6px;
   height: 6px;

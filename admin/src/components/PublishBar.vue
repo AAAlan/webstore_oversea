@@ -6,7 +6,9 @@ const props = defineProps({
   loading: Boolean,
   moduleLabel: { type: String, default: "配置" },
   hideSaveDraft: { type: Boolean, default: false },
+  hidePublish: { type: Boolean, default: false },
   saveDraftLabel: { type: String, default: "保存草稿" },
+  publishLabel: { type: String, default: "发布" },
 });
 
 const emit = defineEmits(["save-draft", "publish"]);
@@ -29,9 +31,6 @@ function formatTime(iso) {
   <div class="publish-bar" :class="{ 'has-changes': hasChanges }">
     <div class="publish-bar-info">
       <span class="publish-bar-label">{{ moduleLabel }}</span>
-      <span class="status-pill" :class="hasChanges ? 'warn' : 'synced'">
-        {{ hasChanges ? "待发布" : "已同步" }}
-      </span>
       <span class="publish-bar-desc">{{ statusText }}</span>
       <span v-if="meta" class="publish-bar-times">
         草稿 {{ formatTime(meta.draftUpdatedAt) }} · 发布 {{ formatTime(meta.publishedAt) }}
@@ -48,12 +47,13 @@ function formatTime(iso) {
         {{ saveDraftLabel }}
       </button>
       <button
+        v-if="!hidePublish"
         class="btn btn--publish"
         type="button"
         :disabled="loading || !hasChanges"
         @click="emit('publish')"
       >
-        发布
+        {{ publishLabel }}
       </button>
     </div>
   </div>

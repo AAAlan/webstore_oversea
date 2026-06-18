@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   REGION_DEMO_CODE,
   REGION_DEMO_JP_16_TO_20,
@@ -12,6 +12,8 @@ import {
   getProductAgeLimitReason,
 } from "./recharge-limit.js";
 import { api } from "./api.js";
+import { buildLocaleOptions, getFooterFieldKeys } from "../../shared/language-presets.js";
+import { formatRemainingDaysLabel, formatRemainingTimeLabel } from "../../shared/time-limit.js";
 
 function escapeHtml(text) {
   return text
@@ -57,14 +59,6 @@ function normalizeRechargeTips(tips) {
   return fallback;
 }
 
-const LANGUAGE_OPTIONS = [
-  { code: "zh-CN", label: "简中" },
-  { code: "zh-TW", label: "繁中" },
-  { code: "en", label: "English" },
-  { code: "ja", label: "日本語" },
-  { code: "ko", label: "한국어" },
-];
-
 const I18N = {
   "zh-CN": {
     topupCenter: "充值中心",
@@ -75,10 +69,10 @@ const I18N = {
     switchAccount: "切换账号",
     switchRole: "切换角色",
     loginHint: "充值前请先登录账号",
+    selectRoleHint: "登录成功，请先选择角色后继续充值。",
     selectRole: "选择角色",
     confirm: "确定",
     noRoleServer: "该服务器尚无角色",
-    setDefault: "设为默认",
     server: "服务器",
     roleId: "角色 ID",
     rechargeGame: "充值游戏",
@@ -100,6 +94,29 @@ const I18N = {
     cannotRecharge: "无法充值",
     restriction: "充值限制",
     gotIt: "我知道了",
+    cashierTitle: "收银台",
+    cashierSecurity: "你的个人信息非常安全且不会公开",
+    choosePayMethod: "请选择支付方式",
+    cashierOrderTitle: "Gryphline 充值中心订单",
+    cashierItemPrice: "商品价格",
+    cashierTotal: "总价",
+    cashierAgreement: "已阅读并同意支付协议条款",
+    cashierPayNow: "立即支付",
+    cashierCard: "信用卡/借记卡",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
+    cashierKonbini: "Konbini",
+    cashierPaypalSave: "保存 PayPal 账号用于下次购买",
+    payWaitingTitle: "待支付",
+    payWaitingDesc: "请您尽快完成支付",
+    payCancel: "取消",
+    payIHavePaid: "我已支付",
+    konbiniReturnTitle: "待支付",
+    konbiniReturnDesc: "请在便利店完成支付后，返回游戏内确认您的购买结果。如有疑问，请提供支付小票联系客户服务。",
+    konbiniReturnConfirm: "去确认",
+    payProcessingToast: "付款正在处理中，请勿关闭此页面",
+    payNoResultToast: "未查询到您的支付结果。如果您已完成支付，请返回商城确认到账结果。",
     userAgreement: "用户协议",
     privacyPolicy: "隐私协议",
     footerDisclaimer: "业务内容请以游戏内信息为准。请合理安排游戏时间，适度消费。",
@@ -113,10 +130,10 @@ const I18N = {
     switchAccount: "切換帳號",
     switchRole: "切換角色",
     loginHint: "儲值前請先登入帳號",
+    selectRoleHint: "登入成功，請先選擇角色後繼續儲值。",
     selectRole: "選擇角色",
     confirm: "確定",
     noRoleServer: "該伺服器尚無角色",
-    setDefault: "設為預設",
     server: "伺服器",
     roleId: "角色 ID",
     rechargeGame: "儲值遊戲",
@@ -138,6 +155,29 @@ const I18N = {
     cannotRecharge: "無法儲值",
     restriction: "儲值限制",
     gotIt: "我知道了",
+    cashierTitle: "收銀台",
+    cashierSecurity: "你的個人資訊非常安全且不會公開",
+    choosePayMethod: "請選擇支付方式",
+    cashierOrderTitle: "Gryphline 儲值中心訂單",
+    cashierItemPrice: "商品價格",
+    cashierTotal: "總價",
+    cashierAgreement: "已閱讀並同意支付協議條款",
+    cashierPayNow: "立即支付",
+    cashierCard: "信用卡／簽帳卡",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
+    cashierKonbini: "Konbini",
+    cashierPaypalSave: "保存 PayPal 帳號用於下次購買",
+    payWaitingTitle: "待支付",
+    payWaitingDesc: "請您盡快完成支付",
+    payCancel: "取消",
+    payIHavePaid: "我已支付",
+    konbiniReturnTitle: "待支付",
+    konbiniReturnDesc: "請在便利商店完成支付後，返回遊戲內確認您的購買結果。如有疑問，請提供支付小票聯繫客服。",
+    konbiniReturnConfirm: "去確認",
+    payProcessingToast: "付款正在處理中，請勿關閉此頁面",
+    payNoResultToast: "未查詢到您的支付結果。如果您已完成支付，請返回商店確認到帳結果。",
     userAgreement: "用戶協議",
     privacyPolicy: "隱私協議",
     footerDisclaimer: "業務內容請以遊戲內資訊為準。請合理安排遊戲時間，適度消費。",
@@ -151,10 +191,10 @@ const I18N = {
     switchAccount: "Switch account",
     switchRole: "Switch role",
     loginHint: "Please log in before topping up.",
+    selectRoleHint: "Login succeeded. Please select a role before continuing.",
     selectRole: "Select Role",
     confirm: "Confirm",
     noRoleServer: "No role on this server",
-    setDefault: "Set as default",
     server: "Server",
     roleId: "Role ID",
     rechargeGame: "Game",
@@ -176,6 +216,29 @@ const I18N = {
     cannotRecharge: "Unavailable",
     restriction: "Top-up Restricted",
     gotIt: "OK",
+    cashierTitle: "Checkout",
+    cashierSecurity: "Your personal information is secure and will not be made public",
+    choosePayMethod: "Choose a payment method",
+    cashierOrderTitle: "Gryphline Top-up Center Order",
+    cashierItemPrice: "Item price",
+    cashierTotal: "Total",
+    cashierAgreement: "I have read and agree to the payment terms",
+    cashierPayNow: "Pay Now",
+    cashierCard: "Credit / Debit Card",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
+    cashierKonbini: "Konbini",
+    cashierPaypalSave: "Save PayPal account for next purchase",
+    payWaitingTitle: "Awaiting payment",
+    payWaitingDesc: "Please complete the payment as soon as possible",
+    payCancel: "Cancel",
+    payIHavePaid: "I have paid",
+    konbiniReturnTitle: "Awaiting payment",
+    konbiniReturnDesc: "Please finish payment at the convenience store, then return to the game to confirm your purchase. If you need help, contact support with your receipt.",
+    konbiniReturnConfirm: "Go to confirm",
+    payProcessingToast: "Payment is being processed. Please do not close this page.",
+    payNoResultToast: "No payment result was found. If you have already paid, please return to the mall to confirm receipt.",
     userAgreement: "Terms of Service",
     privacyPolicy: "Privacy Policy",
     footerDisclaimer: "In-game information prevails. Please play responsibly and spend moderately.",
@@ -189,10 +252,10 @@ const I18N = {
     switchAccount: "アカウント切替",
     switchRole: "キャラクター切替",
     loginHint: "チャージ前にログインしてください。",
+    selectRoleHint: "ログインに成功しました。続けるには先にキャラクターを選択してください。",
     selectRole: "キャラクター選択",
     confirm: "確定",
     noRoleServer: "このサーバーにキャラクターはいません",
-    setDefault: "デフォルトに設定",
     server: "サーバー",
     roleId: "UID",
     rechargeGame: "ゲーム",
@@ -214,6 +277,29 @@ const I18N = {
     cannotRecharge: "チャージ不可",
     restriction: "チャージ制限",
     gotIt: "OK",
+    cashierTitle: "レジ",
+    cashierSecurity: "個人情報は安全に保護され、公開されません",
+    choosePayMethod: "支払い方法を選択してください",
+    cashierOrderTitle: "Gryphline チャージセンター注文",
+    cashierItemPrice: "商品価格",
+    cashierTotal: "合計",
+    cashierAgreement: "支払い規約に同意します",
+    cashierPayNow: "今すぐ支払う",
+    cashierCard: "クレジット／デビットカード",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
+    cashierKonbini: "Konbini",
+    cashierPaypalSave: "次回購入用に PayPal アカウントを保存",
+    payWaitingTitle: "支払い待ち",
+    payWaitingDesc: "できるだけ早く支払いを完了してください",
+    payCancel: "キャンセル",
+    payIHavePaid: "支払いました",
+    konbiniReturnTitle: "支払い待ち",
+    konbiniReturnDesc: "コンビニで支払いを完了したら、ゲームに戻って購入結果をご確認ください。ご不明な点があれば、支払い控えを添えてサポートまでご連絡ください。",
+    konbiniReturnConfirm: "確認する",
+    payProcessingToast: "支払い処理中です。しばらくこのページを閉じないでください。",
+    payNoResultToast: "支払い結果が確認できませんでした。すでに支払い済みの場合は、ストアに戻って到着結果を確認してください。",
     userAgreement: "利用規約",
     privacyPolicy: "プライバシーポリシー",
     footerDisclaimer: "内容はゲーム内表示を基準とします。適度にお楽しみください。",
@@ -227,10 +313,10 @@ const I18N = {
     switchAccount: "계정 전환",
     switchRole: "캐릭터 전환",
     loginHint: "충전 전 계정에 로그인해 주세요.",
+    selectRoleHint: "로그인에 성공했습니다. 계속하려면 먼저 캐릭터를 선택해 주세요.",
     selectRole: "캐릭터 선택",
     confirm: "확인",
     noRoleServer: "해당 서버에 캐릭터가 없습니다",
-    setDefault: "기본값으로 설정",
     server: "서버",
     roleId: "UID",
     rechargeGame: "충전 게임",
@@ -252,6 +338,41 @@ const I18N = {
     cannotRecharge: "충전 불가",
     restriction: "충전 제한",
     gotIt: "확인",
+    cashierTitle: "결제창",
+    cashierSecurity: "개인정보는 안전하게 보호되며 공개되지 않습니다",
+    choosePayMethod: "결제 수단을 선택해 주세요",
+    cashierOrderTitle: "Gryphline 충전 센터 주문",
+    cashierItemPrice: "상품 가격",
+    cashierTotal: "총액",
+    cashierAgreement: "결제 약관에 동의합니다",
+    cashierPayNow: "바로 결제",
+    cashierCard: "신용/체크카드",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
+    cashierKonbini: "Konbini",
+    cashierPaypalSave: "다음 구매를 위해 PayPal 계정 저장",
+    payWaitingTitle: "결제 대기",
+    payWaitingDesc: "가능한 빨리 결제를 완료해 주세요",
+    payCancel: "취소",
+    payIHavePaid: "결제했어요",
+    konbiniReturnTitle: "결제 대기",
+    konbiniReturnDesc: "편의점에서 결제를 완료한 뒤 게임으로 돌아와 구매 결과를 확인해 주세요. 도움이 필요하면 영수증을 첨부해 고객센터에 문의해 주세요.",
+    konbiniReturnConfirm: "확인하러 가기",
+    payProcessingToast: "결제 처리 중입니다. 이 페이지를 닫지 마세요.",
+    payNoResultToast: "결제 결과를 찾지 못했습니다. 이미 결제했다면 몰로 돌아가 수령 여부를 확인해 주세요.",
+    cashierTitle: "결제창",
+    cashierSecurity: "개인정보는 안전하게 보호되며 공개되지 않습니다",
+    choosePayMethod: "결제 수단을 선택해 주세요",
+    cashierOrderTitle: "Gryphline 충전 센터 주문",
+    cashierItemPrice: "상품 가격",
+    cashierTotal: "총액",
+    cashierAgreement: "결제 약관에 동의합니다",
+    cashierPayNow: "바로 결제",
+    cashierCard: "신용/체크카드",
+    cashierPaypal: "PayPal",
+    cashierApple: "Apple Pay",
+    cashierGoogle: "Google Pay",
     userAgreement: "이용약관",
     privacyPolicy: "개인정보 처리방침",
     footerDisclaimer: "상품 내용은 게임 내 정보를 기준으로 합니다. 적절한 이용과 소비를 부탁드립니다.",
@@ -264,12 +385,24 @@ function t(key) {
   return currentMessages.value[key] ?? I18N["zh-CN"][key] ?? key;
 }
 
+const DEFAULT_BANNER_TEMPLATES = [
+  {
+    id: "banner-1",
+    title: "春季活动",
+    imageUrl: "",
+    linkUrl: "https://www.happyelements.com/",
+    enabled: true,
+    sortOrder: 1,
+  },
+];
+
 const DEFAULT_MALL_CONFIG = {
   game: { name: "终末地", icon: "", iconUrl: null },
-  banners: [],
+  banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
   header: {
     publisherLogoUrl: "/assets/publisher-logo.png",
     customerServiceUrl: "https://www.happyelements.com/",
+    rechargeCenterName: "充值中心",
     rechargeTips: normalizeRechargeTips(null),
   },
   footer: {
@@ -284,6 +417,7 @@ const DEFAULT_MALL_CONFIG = {
   languages: {
     "zh-CN": {
       gameName: "终末地",
+      banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
       rechargeTips: normalizeRechargeTips(null),
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -299,6 +433,7 @@ const DEFAULT_MALL_CONFIG = {
     },
     "zh-TW": {
       gameName: "終末地",
+      banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
       rechargeTips: normalizeRechargeTips(null),
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -314,6 +449,7 @@ const DEFAULT_MALL_CONFIG = {
     },
     en: {
       gameName: "Arknights: Endfield",
+      banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
       rechargeTips: normalizeRechargeTips(null),
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -329,6 +465,7 @@ const DEFAULT_MALL_CONFIG = {
     },
     ja: {
       gameName: "アークナイツ：エンドフィールド",
+      banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
       rechargeTips: normalizeRechargeTips(null),
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -346,6 +483,7 @@ const DEFAULT_MALL_CONFIG = {
     },
     ko: {
       gameName: "명일방주: 엔드필드",
+      banners: DEFAULT_BANNER_TEMPLATES.map((banner) => ({ ...banner })),
       rechargeTips: normalizeRechargeTips(null),
       copyrightText: "© GRYPHLINE. All rights reserved.",
       privacyPolicyUrl: "https://www.happyelements.com/",
@@ -365,6 +503,7 @@ const DEFAULT_MALL_CONFIG = {
 function normalizeLanguageConfig(raw, fallback) {
   return {
     gameName: raw?.gameName || fallback.gameName,
+    banners: Array.isArray(raw?.banners) ? raw.banners : fallback.banners ?? [],
     rechargeTips: normalizeRechargeTips(raw?.rechargeTips ?? fallback.rechargeTips),
     copyrightText: raw?.copyrightText ?? fallback.copyrightText,
     privacyPolicyUrl: raw?.privacyPolicyUrl ?? fallback.privacyPolicyUrl,
@@ -376,26 +515,38 @@ function normalizeLanguageConfig(raw, fallback) {
   };
 }
 
-function normalizeLanguages(raw) {
-  return Object.fromEntries(
-    Object.entries(DEFAULT_MALL_CONFIG.languages).map(([locale, fallback]) => [
+function normalizeLanguages(raw, fallbackBanners = DEFAULT_MALL_CONFIG.banners) {
+  const entries = Object.entries(DEFAULT_MALL_CONFIG.languages).map(([locale, fallback]) => [
+    locale,
+    normalizeLanguageConfig(
+      raw?.[locale],
+      { ...fallback, banners: fallbackBanners },
+    ),
+  ]);
+  for (const [locale, value] of Object.entries(raw ?? {})) {
+    if (DEFAULT_MALL_CONFIG.languages[locale]) continue;
+    entries.push([
       locale,
-      normalizeLanguageConfig(raw?.[locale], fallback),
-    ]),
-  );
+      normalizeLanguageConfig(value, { banners: fallbackBanners, footerLinks: {} }),
+    ]);
+  }
+  return Object.fromEntries(entries);
 }
 
 function resolveMallConfig(raw) {
   if (!raw) return DEFAULT_MALL_CONFIG;
   if (raw.header && raw.footer) {
-    const languages = normalizeLanguages(raw.languages);
+    const languages = normalizeLanguages(raw.languages, raw.banners ?? DEFAULT_MALL_CONFIG.banners);
     return {
       ...raw,
+      banners: Array.isArray(raw.banners) ? raw.banners : DEFAULT_MALL_CONFIG.banners,
       languages,
       header: {
         ...raw.header,
         publisherLogoUrl:
           raw.header.publisherLogoUrl || DEFAULT_MALL_CONFIG.header.publisherLogoUrl,
+        rechargeCenterName:
+          raw.header.rechargeCenterName || DEFAULT_MALL_CONFIG.header.rechargeCenterName,
         rechargeTips: normalizeRechargeTips(raw.header.rechargeTips),
       },
       footer: {
@@ -410,13 +561,14 @@ function resolveMallConfig(raw) {
   return {
     ...DEFAULT_MALL_CONFIG,
     ...raw,
-    languages: normalizeLanguages(raw.languages),
+    banners: Array.isArray(raw.banners) ? raw.banners : DEFAULT_MALL_CONFIG.banners,
+    languages: normalizeLanguages(raw.languages, raw.banners ?? DEFAULT_MALL_CONFIG.banners),
     game: raw.game ?? DEFAULT_MALL_CONFIG.game,
-    banners: raw.banners ?? DEFAULT_MALL_CONFIG.banners,
     header: {
       publisherLogoUrl: DEFAULT_MALL_CONFIG.header.publisherLogoUrl,
       customerServiceUrl:
         legacyFooter.customerServiceUrl ?? DEFAULT_MALL_CONFIG.header.customerServiceUrl,
+      rechargeCenterName: DEFAULT_MALL_CONFIG.header.rechargeCenterName,
       rechargeTips: normalizeRechargeTips(raw.rechargeTips),
     },
     footer: {
@@ -459,17 +611,24 @@ const gameDisplay = computed(() => {
 });
 
 const activeBanners = computed(() => {
-  const list = mallConfig.value?.banners ?? DEFAULT_MALL_CONFIG.banners;
+  const list =
+    mallConfigResolved.value.languages?.[currentLocale.value]?.banners ??
+    mallConfigResolved.value.banners ??
+    DEFAULT_MALL_CONFIG.banners;
   return list
     .filter((b) => b.enabled)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((banner) => ({
-      ...banner,
-      title: localizedText(`mall.banner.${banner.id}.title`, banner.title),
-    }));
+    .map((banner) => ({ ...banner }));
 });
 
 const mallConfigResolved = computed(() => resolveMallConfig(mallConfig.value));
+
+const languageOptions = computed(() =>
+  buildLocaleOptions({
+    languageMeta: mallConfigResolved.value.languageMeta ?? {},
+    languages: mallConfigResolved.value.languages ?? {},
+  }),
+);
 
 const headerConfig = computed(
   () => mallConfigResolved.value.header,
@@ -480,9 +639,19 @@ const footerConfig = computed(
 );
 
 const rechargeTipsConfig = computed(
-  () =>
-    mallConfigResolved.value.languages?.[currentLocale.value]?.rechargeTips ??
-    headerConfig.value.rechargeTips,
+  () => ({
+    contentHtml: localizedText(
+      "mall.header.rechargeTips",
+      headerConfig.value.rechargeTips.contentHtml,
+    ),
+  }),
+);
+
+const rechargeCenterNameText = computed(() =>
+  localizedText(
+    "mall.header.rechargeCenterName",
+    headerConfig.value.rechargeCenterName || t("topupCenter"),
+  ),
 );
 
 const localizedFooterConfig = computed(() => ({
@@ -492,19 +661,31 @@ const localizedFooterConfig = computed(() => ({
 
 const footerLinkList = computed(() => {
   const links = localizedFooterConfig.value.footerLinks ?? {};
-  if (currentLocale.value === "ja") {
-    return [
-      { label: links.termsLabel || "ユーザー利用規約", url: localizedFooterConfig.value.userAgreementUrl },
-      { label: links.privacyLabel || "プライバシーポリシー", url: localizedFooterConfig.value.privacyPolicyUrl },
-      { label: links.rulesLabel || "資金決済法に基づく表示", url: localizedFooterConfig.value.customerServiceUrl },
-      { label: links.contactLabel || "お問い合わせ", url: localizedFooterConfig.value.customerServiceUrl },
-    ];
-  }
-  return [
-    { label: links.termsLabel || t("userAgreement"), url: localizedFooterConfig.value.userAgreementUrl },
-    { label: links.privacyLabel || t("privacyPolicy"), url: localizedFooterConfig.value.privacyPolicyUrl },
-    { label: links.contactLabel || t("customerService"), url: localizedFooterConfig.value.customerServiceUrl },
-  ];
+  return getFooterFieldKeys(currentLocale.value, links)
+    .map((key) => {
+      if (key === "termsLabel") {
+        return { label: links.termsLabel || t("userAgreement"), url: localizedFooterConfig.value.userAgreementUrl };
+      }
+      if (key === "privacyLabel") {
+        return { label: links.privacyLabel || t("privacyPolicy"), url: localizedFooterConfig.value.privacyPolicyUrl };
+      }
+      if (key === "contactLabel") {
+        return { label: links.contactLabel || t("customerService"), url: localizedFooterConfig.value.customerServiceUrl };
+      }
+      if (key === "rulesLabel" || key === "paymentLabel" || key === "ageLabel") {
+        if (key === "ageLabel") return null;
+        const fallbackLabel =
+          key === "rulesLabel" || key === "paymentLabel"
+            ? "資金決済法に基づく表示"
+            : key;
+        return {
+          label: links[key] || fallbackLabel,
+          url: localizedFooterConfig.value.customerServiceUrl,
+        };
+      }
+      return links[key] ? { label: links[key], url: localizedFooterConfig.value.customerServiceUrl } : null;
+    })
+    .filter(Boolean);
 });
 
 function openCustomerService() {
@@ -578,12 +759,15 @@ const resultMessage = ref("");
 const showRechargeTips = ref(false);
 const showAccountMenu = ref(false);
 const showLoginModal = ref(false);
-const isSwitchingAccount = ref(false);
+const showRoleSelector = ref(false);
 const showProductDetail = ref(false);
 const showCashier = ref(false);
 const showCashierRetain = ref(false);
+const showKonbiniReturnConfirm = ref(false);
 const showPayResultConfirm = ref(false);
 const showPayResultPage = ref(false);
+const showPaypalPage = ref(false);
+const showKonbiniPage = ref(false);
 const payResultStatus = ref("success");
 const payResultOrderId = ref("");
 const payResultAmount = ref(0);
@@ -593,13 +777,21 @@ const selectedProduct = ref(null);
 const draftSelectedRole = ref("");
 const purchaseQty = ref(1);
 const payChannel = ref("alipay");
+const pcPaymentMethod = ref("card");
+const savePayPalAccount = ref(true);
 const hasLaunchedPayApp = ref(false);
 const isMobileH5 = ref(false);
 const payOrderNo = ref("");
 const pendingOrderId = ref("");
 const showPayLanding = ref(false);
 const showPayNoResult = ref(false);
+const payToastMessage = ref("");
+const showPayToast = ref(false);
+const payToastLoading = ref(false);
+const cashierCardRef = ref(null);
+const konbiniExpireAt = ref("");
 const PAY_SESSION_KEY = "le_pay_session";
+let payToastTimer = null;
 
 const loginMode = ref("sms");
 const loginPhone = ref("");
@@ -684,7 +876,12 @@ const productSource = computed(() => {
 function mapProductCard(item) {
   const soldOut = Boolean(item.soldOut);
   const timeLimit =
-    item.timeLimit ?? (item.tag && /剩余\d+天/.test(item.tag) ? item.tag : null);
+    formatRemainingTimeLabel(item.timeLimitEnd, currentLocale.value) ??
+    (item.expiresInDays != null
+      ? formatRemainingDaysLabel(item.expiresInDays, currentLocale.value)
+      : null) ??
+    item.timeLimit ??
+    (item.tag && /剩余\d+(?:天|小时)/.test(item.tag) ? item.tag : null);
   const promoTag =
     item.promoTag ??
     (soldOut || !item.tag || item.tag === "无法购买" || item.tag === timeLimit
@@ -780,6 +977,9 @@ const currentRole = computed(() => {
   return defaultMockRoles[0];
 });
 
+const hasSelectedRole = computed(() => Boolean(selectedRole.value));
+const showMallPage = computed(() => isLoggedIn.value && hasSelectedRole.value);
+
 const maxPurchaseQty = computed(() => {
   const product = selectedProduct.value;
   if (!product) {
@@ -828,6 +1028,77 @@ const detailTotalAmount = computed(() => {
   return selectedProduct.value.price * purchaseQty.value;
 });
 
+const cashierAmountLabel = computed(() => `$${detailTotalAmount.value.toFixed(2)}`);
+
+const pcPaymentMethods = computed(() => [
+  {
+    id: "card",
+    label: t("cashierCard"),
+    note: currentLocale.value === "en" ? "Visa / Mastercard / AmEx" : "支持多种主流银行卡",
+    badge: "C",
+  },
+  {
+    id: "paypal",
+    label: t("cashierPaypal"),
+    note: currentLocale.value === "en" ? "Pay with your PayPal account" : "使用 PayPal 账号支付",
+    badge: "P",
+  },
+  {
+    id: "apple",
+    label: t("cashierApple"),
+    note: currentLocale.value === "en" ? "Available on Apple devices" : "苹果设备可用",
+    badge: "A",
+  },
+  {
+    id: "google",
+    label: t("cashierGoogle"),
+    note: currentLocale.value === "en" ? "Fast checkout with Google Pay" : "使用 Google Pay 快速结账",
+    badge: "G",
+  },
+  {
+    id: "konbini",
+    label: t("cashierKonbini"),
+    note: currentLocale.value === "ja" ? "ローソン / ファミリーマート / セイコーマート / ミニストップ" : "日本便利店支付",
+    badge: "K",
+  },
+]);
+
+const selectedPcPaymentMethod = computed(
+  () => pcPaymentMethods.value.find((item) => item.id === pcPaymentMethod.value) ?? pcPaymentMethods.value[0],
+);
+
+const isWaitingCheckout = computed(
+  () =>
+    showPaypalPage.value ||
+    showKonbiniPage.value ||
+    pcPaymentMethod.value === "paypal" ||
+    pcPaymentMethod.value === "konbini" ||
+    payChannel.value === "paypal" ||
+    payChannel.value === "konbini",
+);
+
+function clearPayToast() {
+  if (payToastTimer) {
+    window.clearTimeout(payToastTimer);
+    payToastTimer = null;
+  }
+  showPayToast.value = false;
+  payToastMessage.value = "";
+  payToastLoading.value = false;
+}
+
+function openPayToast(message, { loading = false, duration = 0 } = {}) {
+  clearPayToast();
+  payToastMessage.value = message;
+  payToastLoading.value = loading;
+  showPayToast.value = true;
+  if (duration > 0) {
+    payToastTimer = window.setTimeout(() => {
+      clearPayToast();
+    }, duration);
+  }
+}
+
 const canSendSms = computed(() => /^1\d{10}$/.test(loginPhone.value.trim()) && smsCountdown.value === 0);
 
 const canSubmitLogin = computed(() => {
@@ -842,41 +1113,39 @@ const canSubmitLogin = computed(() => {
 
 function applyDefaultRoles() {
   roleList.value = [...defaultMockRoles];
-  if (!draftSelectedRole.value || !roleList.value.some((item) => item.id === draftSelectedRole.value && !item.empty)) {
-    draftSelectedRole.value = roleList.value.find((item) => !item.empty)?.id ?? "";
-  }
-}
-
-function ensureDraftRole() {
-  if (!draftSelectedRole.value || !roleList.value.some((item) => item.id === draftSelectedRole.value && !item.empty)) {
-    draftSelectedRole.value =
-      selectedRole.value && roleList.value.some((item) => item.id === selectedRole.value && !item.empty)
-        ? selectedRole.value
-        : roleList.value.find((item) => !item.empty)?.id ?? "";
-  }
 }
 
 async function loadData({ promptRole = false } = {}) {
   try {
     roleList.value = await api.getRoles();
-    if (roleList.value.length > 0) {
-      ensureDraftRole();
-    } else {
+    if (roleList.value.length === 0) {
       applyDefaultRoles();
     }
   } catch {
     applyDefaultRoles();
   }
-  if (isLoggedIn.value && gameAccount.value && (promptRole || !selectedRole.value)) {
-    ensureDraftRole();
+  if (!isLoggedIn.value || !gameAccount.value) {
     return;
   }
-  if (isLoggedIn.value && gameAccount.value && selectedRole.value) {
-    const allowed = await checkAccountStatus();
-    if (allowed) {
-      await loadMall();
-    }
+  const allowed = await checkAccountStatus();
+  if (!allowed) {
+    showRoleSelector.value = false;
+    draftSelectedRole.value = "";
+    return;
   }
+  if (promptRole || !selectedRole.value) {
+    draftSelectedRole.value = "";
+    showRoleSelector.value = true;
+    return;
+  }
+  if (selectedRole.value) {
+    await loadMall();
+  }
+}
+
+function openRoleSelector(preselectCurrent = true) {
+  draftSelectedRole.value = preselectCurrent ? selectedRole.value : "";
+  showRoleSelector.value = true;
 }
 
 async function confirmRoleSelection() {
@@ -885,6 +1154,7 @@ async function confirmRoleSelection() {
     return;
   }
   selectedRole.value = role.id;
+  showRoleSelector.value = false;
   const allowed = await checkAccountStatus();
   if (allowed) {
     await loadMall();
@@ -899,13 +1169,15 @@ function applyRechargeLimitFromData(data) {
 function applyLocalAccountStatus() {
   const accountId = gameAccount.value.trim();
   if (accountId === BANNED_DEMO_PHONE) {
-    accountBanned.value = true;
-    banReason.value = DEFAULT_BAN_REASON;
-    banBannedAt.value = "2026-05-01";
-    showBannedModal.value = true;
-    mallReady.value = true;
-    storeUnlocked.value = false;
-    mallProducts.value = [];
+  accountBanned.value = true;
+  banReason.value = DEFAULT_BAN_REASON;
+  banBannedAt.value = "2026-05-01";
+  showBannedModal.value = true;
+  showRoleSelector.value = false;
+  draftSelectedRole.value = "";
+  mallReady.value = true;
+  storeUnlocked.value = false;
+  mallProducts.value = [];
     rechargeLimit.value = null;
     return false;
   }
@@ -928,6 +1200,8 @@ async function checkAccountStatus() {
       banReason.value = data.banReason || DEFAULT_BAN_REASON;
       banBannedAt.value = data.bannedAt || "";
       showBannedModal.value = true;
+      showRoleSelector.value = false;
+      draftSelectedRole.value = "";
       mallReady.value = true;
       storeUnlocked.value = false;
       mallProducts.value = [];
@@ -1002,13 +1276,11 @@ function closeStoreLockedModal() {
 }
 
 function openLogin() {
-  isSwitchingAccount.value = false;
   showLoginModal.value = true;
 }
 
 function closeLogin() {
   showLoginModal.value = false;
-  isSwitchingAccount.value = false;
 }
 
 function switchLoginMode(mode) {
@@ -1106,13 +1378,10 @@ async function submitLogin() {
   if (!canSubmitLogin.value) {
     return;
   }
-  const switching = isSwitchingAccount.value;
   gameAccount.value = loginPhone.value.trim();
   isLoggedIn.value = true;
   selectedRole.value = "";
   showLoginModal.value = false;
-  isSwitchingAccount.value = false;
-  resultMessage.value = switching ? "账号已切换" : "";
   await loadData({ promptRole: true });
 }
 
@@ -1169,9 +1438,15 @@ function openPayResultPage(status, orderData = null, failMessage = "") {
   payResultAmount.value = orderData?.amount ?? detailTotalAmount.value;
   payResultFailMessage.value = failMessage;
   showCashier.value = false;
+  showPaypalPage.value = false;
+  showKonbiniPage.value = false;
+  showKonbiniReturnConfirm.value = false;
   showPayLanding.value = false;
   showPayResultConfirm.value = false;
   showPayNoResult.value = false;
+  showCashierRetain.value = false;
+  clearPayToast();
+  konbiniExpireAt.value = "";
   resetH5PayFlow();
   clearPaySession();
   showPayResultPage.value = true;
@@ -1189,7 +1464,29 @@ function retryPayment() {
 }
 
 function payChannelLabel(channel = payChannel.value) {
-  return channel === "wechat" ? "微信支付" : "支付宝支付";
+  if (channel === "wechat") {
+    return "微信支付";
+  }
+  if (channel === "paypal") {
+    return "PayPal";
+  }
+  if (channel === "konbini") {
+    return "Konbini";
+  }
+  return "支付宝支付";
+}
+
+function formatKonbiniExpireAt() {
+  const time = new Date(Date.now() + 30 * 60 * 1000);
+  return time.toLocaleString("ja-JP", {
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 async function processPaymentSuccess() {
@@ -1334,21 +1631,17 @@ function logout() {
   rechargeLimit.value = null;
   showAgeLimitModal.value = false;
   ageLimitModalMessage.value = "";
+  showRoleSelector.value = false;
   draftSelectedRole.value = "";
   showAccountMenu.value = false;
   showCashier.value = false;
+  showPaypalPage.value = false;
+  showKonbiniPage.value = false;
+  showKonbiniReturnConfirm.value = false;
   showProductDetail.value = false;
+  konbiniExpireAt.value = "";
+  clearPayToast();
   resultMessage.value = "已退出登录";
-}
-
-function switchAccount() {
-  showAccountMenu.value = false;
-  isSwitchingAccount.value = true;
-  loginPhone.value = "";
-  loginSmsCode.value = "";
-  loginPassword.value = "";
-  loginAgreed.value = false;
-  showLoginModal.value = true;
 }
 
 function handleBuy(productId) {
@@ -1436,7 +1729,14 @@ function payNow() {
     return;
   }
   showProductDetail.value = false;
-  payChannel.value = isMobileH5.value ? "alipay" : "wechat";
+  payChannel.value =
+    pcPaymentMethod.value === "paypal"
+      ? "paypal"
+      : pcPaymentMethod.value === "konbini"
+        ? "konbini"
+        : isMobileH5.value
+          ? "alipay"
+          : "wechat";
   resetH5PayFlow();
   payOrderNo.value = `LE${Date.now()}`;
   showCashier.value = true;
@@ -1470,12 +1770,67 @@ async function openPayLanding(channel) {
     await createPendingPayOrder();
     showCashier.value = false;
     showCashierRetain.value = false;
+    showKonbiniReturnConfirm.value = false;
     showPayLanding.value = true;
     hasLaunchedPayApp.value = false;
     savePaySession();
   } catch (error) {
     resultMessage.value = error.message;
     showCashier.value = true;
+  } finally {
+    creating.value = false;
+  }
+}
+
+async function openPaypalPage() {
+  if (!selectedProduct.value) {
+    return;
+  }
+  payChannel.value = "paypal";
+  creating.value = true;
+  try {
+    if (!pendingOrderId.value) {
+      await createPendingPayOrder();
+    }
+    savePaySession();
+    konbiniExpireAt.value = formatKonbiniExpireAt();
+    clearPayToast();
+    showCashierRetain.value = false;
+    showKonbiniReturnConfirm.value = false;
+    showPayResultConfirm.value = false;
+    showPayNoResult.value = false;
+    showPaypalPage.value = true;
+    showKonbiniPage.value = false;
+    showCashier.value = true;
+    hasLaunchedPayApp.value = false;
+  } catch (error) {
+    resultMessage.value = error.message || "创建 PayPal 订单失败";
+  } finally {
+    creating.value = false;
+  }
+}
+
+async function openKonbiniPage() {
+  if (!selectedProduct.value) {
+    return;
+  }
+  payChannel.value = "konbini";
+  creating.value = true;
+  try {
+    if (!pendingOrderId.value) {
+      await createPendingPayOrder();
+    }
+    savePaySession();
+    clearPayToast();
+    showCashierRetain.value = false;
+    showKonbiniReturnConfirm.value = false;
+    showPayResultConfirm.value = false;
+    showPayNoResult.value = false;
+    showPaypalPage.value = false;
+    showKonbiniPage.value = true;
+    showCashier.value = true;
+  } catch (error) {
+    resultMessage.value = error.message || "创建 Konbini 订单失败";
   } finally {
     creating.value = false;
   }
@@ -1530,12 +1885,32 @@ async function handleH5PayReturn() {
 function closeCashier() {
   showCashier.value = false;
   showCashierRetain.value = false;
+  showPaypalPage.value = false;
+  showKonbiniPage.value = false;
+  showKonbiniReturnConfirm.value = false;
   showPayLanding.value = false;
+  showPayResultConfirm.value = false;
+  showPayNoResult.value = false;
+  clearPayToast();
+  konbiniExpireAt.value = "";
   resetH5PayFlow();
   clearPaySession();
 }
 
 function requestCloseCashier() {
+  if (showKonbiniPage.value) {
+    showCashierRetain.value = false;
+    showKonbiniPage.value = false;
+    showCashier.value = true;
+    showKonbiniReturnConfirm.value = true;
+    return;
+  }
+  if (isWaitingCheckout.value) {
+    showPaypalPage.value = false;
+    showKonbiniPage.value = false;
+    showCashierRetain.value = true;
+    return;
+  }
   showCashierRetain.value = true;
 }
 
@@ -1543,16 +1918,115 @@ function cancelCashierRetain() {
   showCashierRetain.value = false;
 }
 
+function cancelKonbiniReturnConfirm() {
+  showKonbiniReturnConfirm.value = false;
+  showCashier.value = true;
+}
+
+function confirmKonbiniReturnConfirm() {
+  showKonbiniReturnConfirm.value = false;
+  closeCashier();
+}
+
 function confirmCashierRetainLeave() {
   closeCashier();
 }
 
-function selectPcPayChannel(channel) {
-  payChannel.value = channel;
+function selectPcPaymentMethod(method) {
+  pcPaymentMethod.value = method;
 }
 
 function openPcPayConfirm() {
+  if (pcPaymentMethod.value === "paypal") {
+    openPaypalPage();
+    return;
+  }
+  if (pcPaymentMethod.value === "konbini") {
+    openKonbiniPage();
+    return;
+  }
   processPaymentSuccess();
+}
+
+async function completePaypalPayment() {
+  creating.value = true;
+  try {
+    if (!pendingOrderId.value) {
+      await createPendingPayOrder();
+    }
+    await notifyOrderPaidFromApp();
+    showPaypalPage.value = false;
+    showKonbiniPage.value = false;
+    showKonbiniReturnConfirm.value = false;
+    await loadMall();
+    const status = await queryOrderPaymentStatus();
+    openPayResultPage("success", status.order);
+  } catch (error) {
+    resultMessage.value = error.message || "PayPal 支付失败";
+  } finally {
+    creating.value = false;
+  }
+}
+
+async function completeKonbiniPayment() {
+  creating.value = true;
+  try {
+    if (!pendingOrderId.value) {
+      await createPendingPayOrder();
+    }
+    await notifyOrderPaidFromApp();
+    showKonbiniPage.value = false;
+    showPaypalPage.value = false;
+    showKonbiniReturnConfirm.value = false;
+    await loadMall();
+    const status = await queryOrderPaymentStatus();
+    openPayResultPage("success", status.order);
+  } catch (error) {
+    resultMessage.value = error.message || "Konbini 支付失败";
+  } finally {
+    creating.value = false;
+  }
+}
+
+async function confirmPayWaitingPaid() {
+  if (!pendingOrderId.value) {
+    if (pcPaymentMethod.value === "konbini" || payChannel.value === "konbini") {
+      await completeKonbiniPayment();
+    } else {
+      await completePaypalPayment();
+    }
+    return;
+  }
+  showCashierRetain.value = false;
+  openPayToast(t("payProcessingToast"), { loading: true });
+  creating.value = true;
+  try {
+    const status = await queryOrderPaymentStatus();
+    if (status.paid) {
+      clearPayToast();
+      await loadMall();
+      openPayResultPage("success", status.order);
+      return;
+    }
+    showPaypalPage.value = false;
+    showKonbiniPage.value = false;
+    showKonbiniReturnConfirm.value = false;
+    showCashier.value = true;
+    if (isMobileH5.value) {
+      clearPayToast();
+      showPayNoResult.value = true;
+    } else {
+      openPayToast(t("payNoResultToast"), { loading: false, duration: 5200 });
+    }
+  } catch (error) {
+    showPaypalPage.value = false;
+    showKonbiniPage.value = false;
+    showKonbiniReturnConfirm.value = false;
+    showCashier.value = true;
+    openPayToast(error.message || t("payNoResultToast"), { loading: false, duration: 5200 });
+  } finally {
+    creating.value = false;
+  }
 }
 
 async function confirmPaid() {
@@ -1630,8 +2104,19 @@ function restorePaySessionOnMount() {
 }
 
 watch(selectedRole, () => {
-  if (isLoggedIn.value && !accountBanned.value && selectedRole.value) {
+  if (isLoggedIn.value && !accountBanned.value && selectedRole.value && !showRoleSelector.value) {
     loadMall();
+  }
+});
+
+watch(showCashier, async (visible) => {
+  if (!visible) {
+    return;
+  }
+  await nextTick();
+  cashierCardRef.value?.scrollTo?.({ top: 0, behavior: "auto" });
+  if (cashierCardRef.value) {
+    cashierCardRef.value.scrollTop = 0;
   }
 });
 
@@ -1654,6 +2139,9 @@ onBeforeUnmount(() => {
   if (smsTimer) {
     window.clearInterval(smsTimer);
   }
+  if (payToastTimer) {
+    window.clearTimeout(payToastTimer);
+  }
 });
 </script>
 
@@ -1668,16 +2156,16 @@ onBeforeUnmount(() => {
           class="publisher-logo"
         />
         <span v-if="headerConfig.publisherLogoUrl" class="logo-divider">|</span>
-        <span v-if="headerConfig.publisherLogoUrl" class="logo-sub">{{ t("topupCenter") }}</span>
+        <span v-if="headerConfig.publisherLogoUrl" class="logo-sub">{{ rechargeCenterNameText }}</span>
         <template v-else>
           <span class="logo">GRYPHLINE</span>
           <span class="logo-divider">|</span>
-          <span class="logo-sub">{{ t("topupCenter") }}</span>
+          <span class="logo-sub">{{ rechargeCenterNameText }}</span>
         </template>
       </div>
       <div class="actions">
         <select v-model="currentLocale" class="language-select" aria-label="Language">
-          <option v-for="language in LANGUAGE_OPTIONS" :key="language.code" :value="language.code">
+          <option v-for="language in languageOptions" :key="language.code" :value="language.code">
             {{ language.label }}
           </option>
         </select>
@@ -1690,10 +2178,6 @@ onBeforeUnmount(() => {
             <span class="account-arrow" :class="{ open: showAccountMenu }">⌃</span>
           </button>
           <div v-if="showAccountMenu" class="account-menu">
-            <button class="logout-btn" type="button" @click="switchAccount">
-              <span class="logout-icon">⇄</span>
-              <span>{{ t("switchAccount") }}</span>
-            </button>
             <button class="logout-btn" type="button" @click="logout">
               <span class="logout-icon">⎋</span>
               <span>{{ t("logout") }}</span>
@@ -1718,15 +2202,32 @@ onBeforeUnmount(() => {
         </button>
       </section>
 
-      <!-- 未登录态 -->
-      <section v-if="!isLoggedIn" class="login-panel">
+      <!-- 登录前 / 选角前 -->
+      <section v-if="!showMallPage" class="login-panel">
         <div class="game-icon">
           <img v-if="gameDisplay.iconUrl" :src="gameDisplay.iconUrl" alt="" class="game-icon-img" />
           <span v-else class="game-icon-fallback">{{ gameDisplay.iconFallback }}</span>
         </div>
         <h2 class="game-title">{{ gameDisplay.name }}</h2>
-        <button class="login-main-btn" type="button" @click="openLogin">{{ t("login") }}</button>
-        <p class="login-hint">{{ t("loginHint") }}</p>
+        <button
+          v-if="!isLoggedIn"
+          class="login-main-btn"
+          type="button"
+          @click="openLogin"
+        >
+          {{ t("login") }}
+        </button>
+        <button
+          v-else
+          class="login-main-btn"
+          type="button"
+          @click="openRoleSelector"
+        >
+          {{ t("selectRole") }}
+        </button>
+        <p class="login-hint">
+          {{ !isLoggedIn ? t("loginHint") : t("selectRoleHint") }}
+        </p>
 
         <div class="login-demo-block">
           <p class="login-demo-title">演示账号（点击一键登录）</p>
@@ -1771,7 +2272,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <!-- 已登录态 -->
+      <!-- 已登录且已选角色 -->
       <template v-else>
         <section class="role-info-card">
           <div class="role-info-head">
@@ -1787,7 +2288,6 @@ onBeforeUnmount(() => {
             </div>
             <div class="role-actions">
               <button class="switch-account-btn" type="button" @click="openRoleSelector">{{ t("switchRole") }}</button>
-              <button class="switch-account-btn" type="button" @click="switchAccount">{{ t("switchAccount") }}</button>
             </div>
           </div>
 
@@ -1940,21 +2440,22 @@ onBeforeUnmount(() => {
             </section>
           </div>
 
-          <div v-if="accountBanned && showBannedModal" class="ban-modal-mask">
-            <section class="ban-modal">
-              <h4 class="ban-modal-title">账号已封禁</h4>
-              <p class="ban-modal-reason">{{ banReason }}</p>
-              <p v-if="banBannedAt" class="ban-modal-meta">封禁时间：{{ banBannedAt }}</p>
-              <div class="ban-modal-actions">
-                <button class="ban-modal-cs" type="button" @click="contactSupportFromBan">
-                  联系客服
-                </button>
-                <button class="ban-modal-confirm" type="button" @click="closeBannedModal">我知道了</button>
-              </div>
-            </section>
-          </div>
         </section>
       </template>
+
+      <div v-if="accountBanned && showBannedModal" class="ban-modal-mask">
+        <section class="ban-modal">
+          <h4 class="ban-modal-title">账号已封禁</h4>
+          <p class="ban-modal-reason">{{ banReason }}</p>
+          <p v-if="banBannedAt" class="ban-modal-meta">封禁时间：{{ banBannedAt }}</p>
+          <div class="ban-modal-actions">
+            <button class="ban-modal-cs" type="button" @click="contactSupportFromBan">
+              联系客服
+            </button>
+            <button class="ban-modal-confirm" type="button" @click="closeBannedModal">我知道了</button>
+          </div>
+        </section>
+      </div>
 
       <p v-if="resultMessage" class="message">{{ resultMessage }}</p>
     </main>
@@ -2017,7 +2518,7 @@ onBeforeUnmount(() => {
     <div v-if="showLoginModal" class="modal-mask login-mask" @click.self="closeLogin">
       <section class="login-modal">
         <button class="modal-close" type="button" @click="closeLogin">×</button>
-        <h3>{{ isSwitchingAccount ? t("switchAccount") : t("login") }}</h3>
+        <h3>{{ t("login") }}</h3>
 
         <div class="login-brand">
           <p class="login-brand-name">GRYPHLINE</p>
@@ -2078,44 +2579,6 @@ onBeforeUnmount(() => {
           {{ loginMode === "sms" ? "登录" : "登录" }}
         </button>
 
-        <div v-if="isLoggedIn && gameAccount" class="login-role-picker">
-          <p class="login-role-picker-title">{{ t("selectRole") }}</p>
-          <div class="role-select-list role-select-list--inline">
-            <label
-              v-for="role in roleList"
-              :key="role.id"
-              class="role-select-option"
-              :class="{ active: draftSelectedRole === role.id, disabled: role.empty }"
-            >
-              <input
-                v-model="draftSelectedRole"
-                type="radio"
-                :value="role.id"
-                :disabled="role.empty"
-              />
-              <span class="role-select-main">
-                <span class="role-select-name">{{ role.empty ? t("noRoleServer") : role.name }}</span>
-                <span class="role-select-meta">
-                  {{ t("server") }}：{{ role.server }}
-                  <template v-if="!role.empty"> ｜ UID: {{ role.uid }}</template>
-                </span>
-                <span v-if="!role.empty" class="role-select-default">
-                  <span class="role-radio-dot"></span>
-                  {{ t("setDefault") }}
-                </span>
-              </span>
-            </label>
-          </div>
-          <button
-            class="role-select-confirm role-select-confirm--inline"
-            type="button"
-            :disabled="!draftSelectedRole"
-            @click="confirmRoleSelection"
-          >
-            {{ t("confirm") }}
-          </button>
-        </div>
-
         <div class="login-demo-inline">
           <p class="login-demo-inline-title">演示账号</p>
           <button class="login-demo-chip locked" type="button" @click="fillLockedDemoAccount">
@@ -2153,6 +2616,51 @@ onBeforeUnmount(() => {
           <button v-else type="button" class="link-btn" @click="switchLoginMode('sms')">短信验证码登录</button>
           <button type="button" class="link-btn">遇到问题</button>
         </div>
+      </section>
+    </div>
+
+    <!-- 角色选择 -->
+    <div v-if="showRoleSelector" class="modal-mask role-select-mask">
+      <section class="role-select-modal">
+        <button class="modal-close role-select-close" type="button" @click="showRoleSelector = false">
+          ×
+        </button>
+        <header class="role-select-head">
+          <h3>{{ t("selectRole") }}</h3>
+        </header>
+        <div class="role-select-game-mark">
+          <div class="role-select-game-title">{{ gameDisplay.name }}</div>
+        </div>
+        <div class="role-select-list">
+          <label
+            v-for="role in roleList"
+            :key="role.id"
+            class="role-select-option"
+            :class="{ active: draftSelectedRole === role.id, disabled: role.empty }"
+          >
+            <input
+              v-model="draftSelectedRole"
+              type="radio"
+              :value="role.id"
+              :disabled="role.empty"
+            />
+            <span class="role-select-main">
+              <span class="role-select-name">{{ role.empty ? t("noRoleServer") : role.name }}</span>
+              <span class="role-select-meta">
+                {{ t("server") }}：{{ role.server }}
+                <template v-if="!role.empty"> ｜ UID: {{ role.uid }}</template>
+              </span>
+            </span>
+          </label>
+        </div>
+        <button
+          class="role-select-confirm"
+          type="button"
+          :disabled="!draftSelectedRole"
+          @click="confirmRoleSelection"
+        >
+          {{ t("confirm") }}
+        </button>
       </section>
     </div>
 
@@ -2256,125 +2764,202 @@ onBeforeUnmount(() => {
       :class="isMobileH5 ? 'cashier-mask--h5' : 'cashier-mask--pc'"
       @click.self="requestCloseCashier"
     >
-      <section class="cashier-card" :class="isMobileH5 ? 'cashier-card--h5' : 'cashier-card--pc'">
+      <section ref="cashierCardRef" class="cashier-card cashier-card--pc">
         <button class="modal-close" type="button" @click="requestCloseCashier">×</button>
-        <h3>收银台</h3>
-        <p v-if="selectedProduct" class="cashier-amount">￥{{ detailTotalAmount.toFixed(2) }}</p>
-        <p v-if="selectedProduct" class="cashier-name">{{ selectedProduct.name }}</p>
 
-        <!-- PC Web：扫码支付 -->
-        <div v-if="!isMobileH5" class="cashier-pc">
-          <div class="cashier-pc-tabs">
-            <button
-              type="button"
-              :class="['cashier-tab', { active: payChannel === 'wechat' }]"
-              @click="selectPcPayChannel('wechat')"
-            >
-              微信支付
-            </button>
-            <button
-              type="button"
-              :class="['cashier-tab', { active: payChannel === 'alipay' }]"
-              @click="selectPcPayChannel('alipay')"
-            >
-              支付宝支付
-            </button>
-          </div>
-
-          <div class="cashier-qr-panel">
-            <div class="cashier-qr-box" :class="`channel-${payChannel}`">
-              <div class="cashier-qr-pattern" aria-hidden="true"></div>
-              <span class="cashier-qr-brand">{{ payChannel === "wechat" ? "微信" : "支付宝" }}</span>
+        <div class="cashier-pc">
+          <div class="cashier-layout">
+            <div class="cashier-side cashier-side--methods">
+              <div class="cashier-side-head">
+                <h3>{{ t("cashierTitle") }}</h3>
+                <p class="cashier-security">
+                  <span class="cashier-security-icon">✓</span>
+                  {{ t("cashierSecurity") }}
+                </p>
+              </div>
+              <p class="cashier-method-title">{{ t("choosePayMethod") }}</p>
+              <div class="cashier-method-list">
+                <button
+                  v-for="method in pcPaymentMethods"
+                  :key="method.id"
+                  type="button"
+                  class="cashier-method-item"
+                  :class="{ active: pcPaymentMethod === method.id }"
+                  @click="selectPcPaymentMethod(method.id)"
+                >
+                  <span class="cashier-method-radio" aria-hidden="true"></span>
+                  <span class="cashier-method-copy">
+                    <span class="cashier-method-name">{{ method.label }}</span>
+                    <span class="cashier-method-note">{{ method.note }}</span>
+                  </span>
+                  <span class="cashier-method-badge" aria-hidden="true">{{ method.badge }}</span>
+                </button>
+              </div>
+              <label v-if="selectedPcPaymentMethod.id === 'paypal'" class="cashier-paypal-save">
+                <input v-model="savePayPalAccount" type="checkbox" />
+                <span>{{ t("cashierPaypalSave") }}</span>
+              </label>
             </div>
-            <p class="cashier-qr-tip">
-              请使用{{ payChannel === "wechat" ? "微信" : "支付宝" }}扫一扫完成支付
-            </p>
-            <p class="cashier-qr-order">订单号：{{ payOrderNo }}</p>
-          </div>
 
-          <button class="paid-btn paid-btn--pc" type="button" :disabled="creating" @click="openPcPayConfirm">
-            我已完成支付
-          </button>
-        </div>
+            <div class="cashier-side cashier-side--summary">
+              <div class="cashier-order-head">
+                <p class="cashier-order-title">{{ t("cashierOrderTitle") }}</p>
+                <p v-if="selectedProduct" class="cashier-order-name">{{ selectedProduct.name }}</p>
+                <p class="cashier-order-method">{{ selectedPcPaymentMethod.label }}</p>
+              </div>
 
-        <!-- 移动端 H5：选择支付方式 → 跳转渠道落地页 -->
-        <div v-else class="cashier-h5">
-          <p class="cashier-h5-title">选择支付方式</p>
-          <div class="channel-list">
-            <button type="button" class="channel-item channel-item--launch" @click="openPayLanding('alipay')">
-              <span class="channel-main">
-                <span class="channel-icon channel-icon--alipay">支</span>
-                <span class="channel-text">
-                  <span class="channel-name">支付宝</span>
-                  <span class="channel-sub">推荐有支付宝客户端的用户使用</span>
-                </span>
-              </span>
-              <span class="channel-action">去支付</span>
-            </button>
-            <button type="button" class="channel-item channel-item--launch" @click="openPayLanding('wechat')">
-              <span class="channel-main">
-                <span class="channel-icon channel-icon--wechat">微</span>
-                <span class="channel-text">
-                  <span class="channel-name">微信支付</span>
-                  <span class="channel-sub">跳转微信收银台完成支付</span>
-                </span>
-              </span>
-              <span class="channel-action">去支付</span>
-            </button>
-          </div>
-          <p class="launch-tip">将打开支付宝/微信落地页，在落地页中拉起 App 完成支付。</p>
+              <div class="cashier-order-row">
+                <span>{{ t("cashierItemPrice") }}</span>
+                <strong>{{ cashierAmountLabel }}</strong>
+              </div>
 
-          <div class="cashier-mock-panel">
-            <p class="cashier-mock-title">前端模拟（浏览器手机模式可点）</p>
-            <button
-              type="button"
-              class="cashier-mock-btn"
-              :disabled="creating"
-              @click="mockTriggerPayResultConfirm('alipay')"
-            >
-              截图2 · 支付结果确认
-            </button>
-            <button
-              type="button"
-              class="cashier-mock-btn"
-              :disabled="creating"
-              @click="mockTriggerPayNoResult('wechat')"
-            >
-              截图3 · 未查询到结果
-            </button>
-            <button
-              type="button"
-              class="cashier-mock-btn success"
-              :disabled="creating"
-              @click="mockTriggerPaySuccess('alipay')"
-            >
-              支付成功结果页
-            </button>
+              <div class="cashier-order-divider" />
+
+              <div class="cashier-total-row">
+                <span>{{ t("cashierTotal") }}</span>
+                <strong>{{ cashierAmountLabel }}</strong>
+              </div>
+
+              <p class="cashier-agreement">{{ t("cashierAgreement") }} {{ t("userAgreement") }}</p>
+
+              <button class="cashier-pay-btn" type="button" :disabled="creating || !selectedProduct" @click="openPcPayConfirm">
+                {{ t("cashierPayNow") }} {{ cashierAmountLabel }} →
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- 收银台关闭挽留 -->
         <div v-if="showCashierRetain" class="cashier-retain-mask" @click.self="cancelCashierRetain">
-          <section class="cashier-retain-card">
-            <h4>确定要离开收银台吗？</h4>
+          <section class="cashier-retain-card" :class="{ 'is-paypal': isWaitingCheckout }">
+            <button class="modal-close cashier-retain-close" type="button" @click="cancelCashierRetain">×</button>
+            <h4>{{ isWaitingCheckout ? t("payWaitingTitle") : "确定要离开收银台吗？" }}</h4>
             <p class="cashier-retain-desc">
               {{
-                showPayLanding || hasLaunchedPayApp
-                  ? "支付尚未完成，离开后需重新选择支付方式。"
-                  : "订单尚未完成支付，离开后需重新发起支付。"
+                isWaitingCheckout
+                  ? t("payWaitingDesc")
+                  : showPayLanding || hasLaunchedPayApp
+                    ? "支付尚未完成，离开后需重新选择支付方式。"
+                    : "订单尚未完成支付，离开后需重新发起支付。"
               }}
             </p>
             <div class="cashier-retain-actions">
-              <button class="cashier-retain-leave" type="button" @click="confirmCashierRetainLeave">
-                确认离开
+              <button class="cashier-retain-leave" type="button" @click="isWaitingCheckout ? cancelCashierRetain() : confirmCashierRetainLeave()">
+                {{ isWaitingCheckout ? t("payCancel") : "确认离开" }}
               </button>
-              <button class="cashier-retain-stay" type="button" @click="cancelCashierRetain">
-                继续支付
+              <button
+                class="cashier-retain-stay"
+                type="button"
+                @click="isWaitingCheckout ? confirmPayWaitingPaid() : cancelCashierRetain()"
+              >
+                {{ isWaitingCheckout ? t("payIHavePaid") : "继续支付" }}
               </button>
             </div>
           </section>
         </div>
       </section>
+    </div>
+
+    <!-- PayPal 支付页 -->
+    <div v-if="showPaypalPage" class="paypal-page-mask">
+      <section class="paypal-page">
+        <button class="modal-close paypal-page-close" type="button" @click="requestCloseCashier">×</button>
+        <div class="paypal-page-brand">
+          <span class="paypal-page-logo">PayPal</span>
+          <span class="paypal-page-sub">Checkout</span>
+        </div>
+        <p class="paypal-page-title">{{ t("cashierOrderTitle") }}</p>
+        <div class="paypal-page-info">
+          <p class="paypal-page-product">{{ selectedProduct?.name }}</p>
+          <p class="paypal-page-amount">{{ cashierAmountLabel }}</p>
+        </div>
+        <p v-if="savePayPalAccount" class="paypal-page-save">
+          {{ t("cashierPaypalSave") }}
+        </p>
+        <div class="paypal-page-actions">
+          <button class="paypal-page-back" type="button" @click="requestCloseCashier">
+            返回商城
+          </button>
+          <button class="paypal-page-paid" type="button" :disabled="creating" @click="completePaypalPayment">
+            我已完成支付
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="showKonbiniPage" class="konbini-page-mask">
+      <section class="konbini-page">
+        <button class="modal-close konbini-page-close" type="button" @click="requestCloseCashier">×</button>
+        <div class="konbini-page-layout">
+          <div class="konbini-page-summary">
+            <div class="konbini-page-summary-head">
+              <p class="konbini-page-summary-title">支払総額</p>
+              <p class="konbini-page-summary-amount">¥ {{ detailTotalAmount.toFixed(2) }}</p>
+            </div>
+            <p class="konbini-page-product">{{ selectedProduct?.name }}</p>
+            <div class="konbini-page-meta">
+              <div>
+                <span>注文番号</span>
+                <strong>{{ payOrderNo }}</strong>
+              </div>
+              <div>
+                <span>支払期限</span>
+                <strong>{{ konbiniExpireAt }}</strong>
+              </div>
+            </div>
+            <button class="konbini-page-download" type="button" @click="openPayToast('支払い票をダウンロードしました。', { duration: 1800 })">
+              ダウンロード
+            </button>
+          </div>
+
+          <div class="konbini-page-detail">
+            <div class="konbini-page-brand">
+              <span class="konbini-page-brand-text">Konbini</span>
+              <span class="konbini-page-brand-sub">Checkout</span>
+            </div>
+            <p class="konbini-page-note">
+              このコードは、ローソン、セイコーマート、ファミリーマート、ミニストップでご利用いただけます。
+            </p>
+
+            <div class="konbini-page-code">
+              <p class="konbini-page-code-label">支払いコード</p>
+              <p class="konbini-page-code-value">{{ payOrderNo }}</p>
+              <p class="konbini-page-code-expire">有効期限: {{ konbiniExpireAt }}</p>
+            </div>
+
+            <div class="konbini-page-stores">
+              <div class="konbini-store-item">LAWSON</div>
+              <div class="konbini-store-item">FamilyMart</div>
+              <div class="konbini-store-item">Seicomart</div>
+              <div class="konbini-store-item">MINISTOP</div>
+            </div>
+
+            <div class="konbini-page-actions">
+              <button class="konbini-page-back" type="button" @click="requestCloseCashier">返回商城</button>
+              <button class="konbini-page-paid" type="button" :disabled="creating" @click="completeKonbiniPayment">
+                我已完成支付
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="showKonbiniReturnConfirm" class="konbini-return-mask" @click.self="cancelKonbiniReturnConfirm">
+      <section class="konbini-return-card">
+        <button class="modal-close konbini-return-close" type="button" @click="cancelKonbiniReturnConfirm">×</button>
+        <div class="konbini-return-icon" aria-hidden="true">?</div>
+        <h4>{{ t("konbiniReturnTitle") }}</h4>
+        <p class="konbini-return-desc">{{ t("konbiniReturnDesc") }}</p>
+        <button class="konbini-return-confirm" type="button" @click="confirmKonbiniReturnConfirm">
+          {{ t("konbiniReturnConfirm") }}
+        </button>
+      </section>
+    </div>
+
+    <div v-if="showPayToast" class="pay-toast">
+      <span v-if="payToastLoading" class="pay-toast-spinner" aria-hidden="true"></span>
+      <span class="pay-toast-text">{{ payToastMessage }}</span>
     </div>
 
     <!-- H5 支付渠道落地页（全屏） -->
@@ -2439,7 +3024,7 @@ onBeforeUnmount(() => {
         <div class="pay-no-result-icon" aria-hidden="true">!</div>
         <h4>未查询到结果</h4>
         <p class="pay-no-result-desc">若已完成支付，稍候请在游戏内查收</p>
-        <button class="pay-no-result-btn" type="button" @click="closePayNoResult">好的</button>
+        <button class="pay-no-result-btn" type="button" @click="closePayNoResult">{{ t("confirm") }}</button>
       </section>
     </div>
 

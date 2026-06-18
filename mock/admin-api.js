@@ -1,4 +1,4 @@
-import { ADMIN_TOKEN } from "./data.js";
+import { ADMIN_TOKEN, EDITOR_TOKEN } from "./data.js";
 import { ApiError, unauthorized } from "./errors.js";
 import * as store from "./store.js";
 
@@ -9,7 +9,8 @@ function delay(result, ms = 60) {
 }
 
 function assertToken(token) {
-  if (!token || token.trim() !== ADMIN_TOKEN) {
+  const trimmed = token?.trim();
+  if (!trimmed || (trimmed !== ADMIN_TOKEN && trimmed !== EDITOR_TOKEN)) {
     unauthorized("Unauthorized");
   }
 }
@@ -53,6 +54,11 @@ export function createAdminApi(getToken) {
       list: () => run(getToken(), () => store.listTranslations()),
       save: (body) => run(getToken(), () => store.saveTranslationEntry(body)),
       publish: () => run(getToken(), () => store.publishTranslations()),
+    },
+    gameDelivery: {
+      get: () => run(getToken(), () => store.getAdminGameDeliveryConfig()),
+      saveDraft: (body) => run(getToken(), () => store.saveGameDeliveryDraft(body)),
+      publish: () => run(getToken(), () => store.publishGameDelivery()),
     },
     orders: {
       list: () =>
