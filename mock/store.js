@@ -107,6 +107,55 @@ function resolveDraftVersion(currentDraftVersion, publishedVersion) {
   return currentDraftVersion ?? publishedVersion ?? 1;
 }
 
+function buildLegacyCountryPrices(product = {}) {
+  const price = Number(product.price ?? 0);
+  const originalPrice =
+    product.originalPrice == null || product.originalPrice === ""
+      ? null
+      : Number(product.originalPrice);
+  return normalizeCountryPrices([
+    {
+      countryCode: "JP",
+      currency: "JPY",
+      price: Math.max(Math.round(price * 20), 120),
+      originalPrice:
+        originalPrice == null || !Number.isFinite(originalPrice)
+          ? null
+          : Math.max(Math.round(originalPrice * 20), 120),
+    },
+    {
+      countryCode: "US",
+      currency: "USD",
+      price,
+      originalPrice: Number.isFinite(originalPrice) ? originalPrice : null,
+    },
+    {
+      countryCode: "RU",
+      currency: "RUB",
+      price: Math.max(Math.round(price * 95), 99),
+      originalPrice:
+        originalPrice == null || !Number.isFinite(originalPrice)
+          ? null
+          : Math.max(Math.round(originalPrice * 95), 99),
+    },
+  ]);
+}
+
+function normalizeStoredProduct(product = {}) {
+  const hasCountryPrices = Array.isArray(product.countryPrices);
+  return {
+    ...product,
+    currency: product.currency ?? "USD",
+    countryPrices: hasCountryPrices
+      ? normalizeCountryPrices(product.countryPrices)
+      : buildLegacyCountryPrices(product),
+  };
+}
+
+function normalizeStoredProducts(products) {
+  return (Array.isArray(products) ? products : []).map(normalizeStoredProduct);
+}
+
 function createInitialState() {
   const now = new Date().toISOString();
   return {
@@ -169,6 +218,10 @@ function loadState() {
         ...(parsed.monthlyRechargeSpent ?? {}),
       },
     };
+    migrated.productsPublished = normalizeStoredProducts(migrated.productsPublished);
+    migrated.productsDraft = migrated.productsDraft == null
+      ? null
+      : normalizeStoredProducts(migrated.productsDraft);
     migrated.mallConfigDraft = normalizeDraftState(migrated.mallConfigDraft, migrated.mallConfigPublished);
     migrated.productsDraft = normalizeDraftState(migrated.productsDraft, migrated.productsPublished);
     migrated.productCategoriesDraft = normalizeDraftState(
@@ -209,7 +262,7 @@ function loadState() {
       migrated.gameDeliveryPublishedVersion,
     );
     migrated.consumerMallConfig = deepClone(migrated.mallConfigPublished);
-    migrated.consumerProducts = deepClone(migrated.productsPublished);
+    migrated.consumerProducts = normalizeStoredProducts(migrated.productsPublished);
     return migrated;
   } catch {
     return createInitialState();
@@ -230,7 +283,11 @@ if (typeof window !== "undefined") {
         gameDeliveryPublished: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryPublished),
       };
       state.consumerMallConfig = deepClone(state.mallConfigPublished);
-      state.consumerProducts = deepClone(state.productsPublished);
+      state.productsPublished = normalizeStoredProducts(state.productsPublished);
+      state.productsDraft = state.productsDraft == null
+        ? null
+        : normalizeStoredProducts(state.productsDraft);
+      state.consumerProducts = normalizeStoredProducts(state.productsPublished);
     } catch {
       /* ignore corrupt snapshot */
     }
@@ -555,7 +612,7 @@ function getGameDeliveryPublishMeta() {
 
 function ensureProductsDraft() {
   if (state.productsDraft == null) {
-    state.productsDraft = deepClone(state.productsPublished);
+    state.productsDraft = normalizeStoredProducts(state.productsPublished);
     state.productsDraftVersion = state.productsPublishedVersion;
   }
   return state.productsDraft;
@@ -998,7 +1055,7 @@ export function publishGameDelivery() {
 }
 
 export function getProducts() {
-  const products = state.productsDraft ?? state.productsPublished;
+  const products = normalizeStoredProducts(state.productsDraft ?? state.productsPublished);
   return {
     items: products.map((product) => toAdminProduct(product)),
     meta: getProductsPublishMeta(),
@@ -1050,8 +1107,8 @@ export function deleteProduct(id) {
 
 export function publishProducts() {
   const draft = state.productsDraft ?? state.productsPublished;
-  state.productsPublished = deepClone(draft);
-  state.consumerProducts = deepClone(state.productsPublished);
+  state.productsPublished = normalizeStoredProducts(draft);
+  state.consumerProducts = normalizeStoredProducts(state.productsPublished);
   state.productsPublishedAt = new Date().toISOString();
   state.productsPublishedVersion += 1;
   state.productsDraft = null;
