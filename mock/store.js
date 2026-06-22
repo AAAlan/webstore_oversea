@@ -32,6 +32,8 @@ import {
 } from "./utils.js";
 import { DEFAULT_LANGUAGE_OPTIONS } from "../shared/language-presets.js";
 
+const UNLIMITED_PRODUCT_MAX_QUANTITY = 99;
+
 function normalizeGameDeliveryConfig(input = {}, fallback = DEFAULT_GAME_DELIVERY_CONFIG) {
   const source = input ?? {};
   const normalizeWhitelist = (items) =>
@@ -674,7 +676,14 @@ export function createOrder(dto) {
 
   const accountCountryCode = resolvePricingCountryCode(dto.accountId.trim(), dto.countryCode);
   const mallProduct = toMallProduct(dto.accountId.trim(), dto.roleId, product, accountCountryCode);
-  const quantity = Math.max(1, Math.min(dto.quantity ?? 1, 99));
+  const requestedQuantity = Math.max(1, Math.floor(Number(dto.quantity ?? 1)));
+  if (!Number.isFinite(requestedQuantity)) {
+    badRequest("购买数量无效");
+  }
+  if (requestedQuantity > UNLIMITED_PRODUCT_MAX_QUANTITY) {
+    badRequest(`不限购商品单次最多购买 ${UNLIMITED_PRODUCT_MAX_QUANTITY} 件`);
+  }
+  const quantity = requestedQuantity;
   const remaining = mallProduct.remaining;
 
   if (remaining != null && quantity > remaining) {

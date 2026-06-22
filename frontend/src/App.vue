@@ -17,6 +17,8 @@ import { api } from "./api.js";
 import { buildLocaleOptions, getFooterFieldKeys } from "../../shared/language-presets.js";
 import { formatRemainingDaysLabel, formatRemainingTimeLabel } from "../../shared/time-limit.js";
 
+const UNLIMITED_PRODUCT_MAX_QUANTITY = 99;
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
@@ -1009,11 +1011,11 @@ const maxPurchaseQty = computed(() => {
   if (!product) {
     return 1;
   }
-  let cap = 10;
+  let cap = UNLIMITED_PRODUCT_MAX_QUANTITY;
   if (product.limitMax > 0 && product.remaining != null) {
-    cap = Math.max(product.remaining, 1);
+    cap = Math.min(Math.max(product.remaining, 1), UNLIMITED_PRODUCT_MAX_QUANTITY);
   } else if (product.limitMax > 0) {
-    cap = product.limitMax;
+    cap = Math.min(product.limitMax, UNLIMITED_PRODUCT_MAX_QUANTITY);
   }
   const limit = rechargeLimit.value;
   if (limit?.canRecharge && product.price > 0) {
