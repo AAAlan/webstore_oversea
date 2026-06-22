@@ -28,6 +28,7 @@ import {
   deepClone,
   formatRemainingDaysLabel,
   formatRemainingTimeLabel,
+  hasStructuralChanges,
   normalizeMallConfig,
 } from "./utils.js";
 import { DEFAULT_LANGUAGE_OPTIONS } from "../shared/language-presets.js";
@@ -92,28 +93,55 @@ function sanitizeLegacyGameDeliveryConfig(config) {
   return next;
 }
 
+function normalizeDraftState(draft, published) {
+  if (draft == null) return null;
+  return hasStructuralChanges(draft, published) ? draft : null;
+}
+
+function normalizeDraftVersion(draft, version, publishedVersion) {
+  if (draft == null) return null;
+  return version ?? publishedVersion ?? 1;
+}
+
+function resolveDraftVersion(currentDraftVersion, publishedVersion) {
+  return currentDraftVersion ?? publishedVersion ?? 1;
+}
+
 function createInitialState() {
+  const now = new Date().toISOString();
   return {
     roles: deepClone(INITIAL_ROLES),
-    mallConfigDraft: deepClone(DEFAULT_MALL_CONFIG),
+    mallConfigDraft: null,
     mallConfigPublished: deepClone(DEFAULT_MALL_CONFIG),
     contentDraftUpdatedAt: null,
-    contentPublishedAt: new Date().toISOString(),
-    productsDraft: deepClone(INITIAL_PRODUCTS),
+    contentPublishedAt: now,
+    contentDraftVersion: null,
+    contentPublishedVersion: 1,
+    productsDraft: null,
     productsPublished: deepClone(INITIAL_PRODUCTS),
-    productCategoriesDraft: deepClone(INITIAL_PRODUCT_CATEGORIES),
+    productCategoriesDraft: null,
     productCategoriesPublished: deepClone(INITIAL_PRODUCT_CATEGORIES),
-    translationsDraft: {},
+    translationsDraft: null,
     translationsPublished: {},
     productsDraftUpdatedAt: null,
-    productsPublishedAt: new Date().toISOString(),
+    productsPublishedAt: now,
+    productsDraftVersion: null,
+    productsPublishedVersion: 1,
+    productCategoriesDraftUpdatedAt: null,
+    productCategoriesPublishedAt: now,
+    productCategoriesDraftVersion: null,
+    productCategoriesPublishedVersion: 1,
     translationsDraftUpdatedAt: null,
-    translationsPublishedAt: new Date().toISOString(),
-    gameDeliveryDraft: deepClone(DEFAULT_GAME_DELIVERY_CONFIG),
+    translationsPublishedAt: now,
+    translationsDraftVersion: null,
+    translationsPublishedVersion: 1,
+    gameDeliveryDraft: null,
     gameDeliveryPublished: deepClone(DEFAULT_GAME_DELIVERY_CONFIG),
     gameDeliveryDraftUpdatedAt: null,
-    gameDeliveryPublishedAt: new Date().toISOString(),
-    consumerMallConfig: deepClone(CONSUMER_MALL_CONFIG),
+    gameDeliveryPublishedAt: now,
+    gameDeliveryDraftVersion: null,
+    gameDeliveryPublishedVersion: 1,
+    consumerMallConfig: deepClone(DEFAULT_MALL_CONFIG),
     consumerProducts: deepClone(CONSUMER_PRODUCTS),
     banRecords: deepClone(INITIAL_BAN_RECORDS),
     monthlyRechargeSpent: { ...INITIAL_MONTHLY_SPENT },
@@ -131,7 +159,7 @@ function loadState() {
     if (!raw) return createInitialState();
     const parsed = JSON.parse(raw);
     const initial = createInitialState();
-    return {
+    const migrated = {
       ...initial,
       ...parsed,
       gameDeliveryDraft: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryDraft ?? initial.gameDeliveryDraft),
@@ -141,6 +169,48 @@ function loadState() {
         ...(parsed.monthlyRechargeSpent ?? {}),
       },
     };
+    migrated.mallConfigDraft = normalizeDraftState(migrated.mallConfigDraft, migrated.mallConfigPublished);
+    migrated.productsDraft = normalizeDraftState(migrated.productsDraft, migrated.productsPublished);
+    migrated.productCategoriesDraft = normalizeDraftState(
+      migrated.productCategoriesDraft,
+      migrated.productCategoriesPublished,
+    );
+    migrated.translationsDraft = normalizeDraftState(
+      migrated.translationsDraft,
+      migrated.translationsPublished,
+    );
+    migrated.gameDeliveryDraft = normalizeDraftState(
+      migrated.gameDeliveryDraft,
+      migrated.gameDeliveryPublished,
+    );
+    migrated.contentDraftVersion = normalizeDraftVersion(
+      migrated.mallConfigDraft,
+      migrated.contentDraftVersion,
+      migrated.contentPublishedVersion,
+    );
+    migrated.productsDraftVersion = normalizeDraftVersion(
+      migrated.productsDraft,
+      migrated.productsDraftVersion,
+      migrated.productsPublishedVersion,
+    );
+    migrated.productCategoriesDraftVersion = normalizeDraftVersion(
+      migrated.productCategoriesDraft,
+      migrated.productCategoriesDraftVersion,
+      migrated.productCategoriesPublishedVersion,
+    );
+    migrated.translationsDraftVersion = normalizeDraftVersion(
+      migrated.translationsDraft,
+      migrated.translationsDraftVersion,
+      migrated.translationsPublishedVersion,
+    );
+    migrated.gameDeliveryDraftVersion = normalizeDraftVersion(
+      migrated.gameDeliveryDraft,
+      migrated.gameDeliveryDraftVersion,
+      migrated.gameDeliveryPublishedVersion,
+    );
+    migrated.consumerMallConfig = deepClone(migrated.mallConfigPublished);
+    migrated.consumerProducts = deepClone(migrated.productsPublished);
+    return migrated;
   } catch {
     return createInitialState();
   }
@@ -159,6 +229,8 @@ if (typeof window !== "undefined") {
         gameDeliveryDraft: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryDraft),
         gameDeliveryPublished: sanitizeLegacyGameDeliveryConfig(parsed.gameDeliveryPublished),
       };
+      state.consumerMallConfig = deepClone(state.mallConfigPublished);
+      state.consumerProducts = deepClone(state.productsPublished);
     } catch {
       /* ignore corrupt snapshot */
     }
@@ -172,6 +244,8 @@ function persist() {
     mallConfigPublished: state.mallConfigPublished,
     contentDraftUpdatedAt: state.contentDraftUpdatedAt,
     contentPublishedAt: state.contentPublishedAt,
+    contentDraftVersion: state.contentDraftVersion,
+    contentPublishedVersion: state.contentPublishedVersion,
     productsDraft: state.productsDraft,
     productsPublished: state.productsPublished,
     productCategoriesDraft: state.productCategoriesDraft,
@@ -180,12 +254,22 @@ function persist() {
     translationsPublished: state.translationsPublished,
     productsDraftUpdatedAt: state.productsDraftUpdatedAt,
     productsPublishedAt: state.productsPublishedAt,
+    productsDraftVersion: state.productsDraftVersion,
+    productsPublishedVersion: state.productsPublishedVersion,
+    productCategoriesDraftUpdatedAt: state.productCategoriesDraftUpdatedAt,
+    productCategoriesPublishedAt: state.productCategoriesPublishedAt,
+    productCategoriesDraftVersion: state.productCategoriesDraftVersion,
+    productCategoriesPublishedVersion: state.productCategoriesPublishedVersion,
     translationsDraftUpdatedAt: state.translationsDraftUpdatedAt,
     translationsPublishedAt: state.translationsPublishedAt,
+    translationsDraftVersion: state.translationsDraftVersion,
+    translationsPublishedVersion: state.translationsPublishedVersion,
     gameDeliveryDraft: state.gameDeliveryDraft,
     gameDeliveryPublished: state.gameDeliveryPublished,
     gameDeliveryDraftUpdatedAt: state.gameDeliveryDraftUpdatedAt,
     gameDeliveryPublishedAt: state.gameDeliveryPublishedAt,
+    gameDeliveryDraftVersion: state.gameDeliveryDraftVersion,
+    gameDeliveryPublishedVersion: state.gameDeliveryPublishedVersion,
     banRecords: state.banRecords,
     monthlyRechargeSpent: state.monthlyRechargeSpent,
     purchaseCounts: state.purchaseCounts,
@@ -420,6 +504,8 @@ function getContentPublishMeta() {
     state.mallConfigPublished,
     state.contentDraftUpdatedAt,
     state.contentPublishedAt,
+    state.contentDraftVersion,
+    state.contentPublishedVersion,
   );
 }
 
@@ -429,6 +515,8 @@ function getProductsPublishMeta() {
     state.productsPublished,
     state.productsDraftUpdatedAt,
     state.productsPublishedAt,
+    state.productsDraftVersion,
+    state.productsPublishedVersion,
   );
 }
 
@@ -436,8 +524,10 @@ function getProductCategoriesPublishMeta() {
   return buildPublishMeta(
     state.productCategoriesDraft,
     state.productCategoriesPublished,
-    null,
-    null,
+    state.productCategoriesDraftUpdatedAt,
+    state.productCategoriesPublishedAt,
+    state.productCategoriesDraftVersion,
+    state.productCategoriesPublishedVersion,
   );
 }
 
@@ -447,6 +537,8 @@ function getTranslationsPublishMeta() {
     state.translationsPublished,
     state.translationsDraftUpdatedAt,
     state.translationsPublishedAt,
+    state.translationsDraftVersion,
+    state.translationsPublishedVersion,
   );
 }
 
@@ -456,7 +548,25 @@ function getGameDeliveryPublishMeta() {
     state.gameDeliveryPublished,
     state.gameDeliveryDraftUpdatedAt,
     state.gameDeliveryPublishedAt,
+    state.gameDeliveryDraftVersion,
+    state.gameDeliveryPublishedVersion,
   );
+}
+
+function ensureProductsDraft() {
+  if (state.productsDraft == null) {
+    state.productsDraft = deepClone(state.productsPublished);
+    state.productsDraftVersion = state.productsPublishedVersion;
+  }
+  return state.productsDraft;
+}
+
+function ensureProductCategoriesDraft() {
+  if (state.productCategoriesDraft == null) {
+    state.productCategoriesDraft = deepClone(state.productCategoriesPublished);
+    state.productCategoriesDraftVersion = state.productCategoriesPublishedVersion;
+  }
+  return state.productCategoriesDraft;
 }
 
 function getTranslationLocaleCodes() {
@@ -617,7 +727,7 @@ export function getConsumerTranslations() {
 }
 
 export function getProductCategories() {
-  return deepClone(CONSUMER_PRODUCT_CATEGORIES)
+  return deepClone(state.productCategoriesPublished ?? CONSUMER_PRODUCT_CATEGORIES)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -756,8 +866,9 @@ export function getPublishStatus() {
 }
 
 export function getAdminMallConfig() {
+  const draft = state.mallConfigDraft ?? state.mallConfigPublished;
   return {
-    draft: normalizeMallConfig(state.mallConfigDraft),
+    draft: normalizeMallConfig(draft),
     published: normalizeMallConfig(state.mallConfigPublished),
     meta: getContentPublishMeta(),
   };
@@ -774,22 +885,32 @@ export function saveMallConfigDraft(dto) {
     updatedAt: new Date().toISOString(),
   });
   state.contentDraftUpdatedAt = new Date().toISOString();
+  state.contentDraftVersion = resolveDraftVersion(
+    state.contentDraftVersion,
+    state.contentPublishedVersion,
+  );
   persist();
   return { draft: state.mallConfigDraft, meta: getContentPublishMeta() };
 }
 
 export function publishMallConfig() {
-  state.mallConfigPublished = deepClone(normalizeMallConfig(state.mallConfigDraft));
+  const draft = state.mallConfigDraft ?? state.mallConfigPublished;
+  state.mallConfigPublished = deepClone(normalizeMallConfig(draft));
   state.consumerMallConfig = deepClone(state.mallConfigPublished);
   state.contentPublishedAt = new Date().toISOString();
+  state.contentPublishedVersion += 1;
   state.mallConfigPublished.updatedAt = state.contentPublishedAt;
   state.consumerMallConfig.updatedAt = state.contentPublishedAt;
+  state.mallConfigDraft = null;
+  state.contentDraftUpdatedAt = null;
+  state.contentDraftVersion = null;
   persist();
   return { published: state.mallConfigPublished, meta: getContentPublishMeta() };
 }
 
 export function listTranslations() {
-  const items = Object.values(state.translationsDraft ?? {}).sort((a, b) =>
+  const source = state.translationsDraft ?? state.translationsPublished;
+  const items = Object.values(source ?? {}).sort((a, b) =>
     a.key.localeCompare(b.key),
   );
   return {
@@ -802,6 +923,13 @@ export function saveTranslationEntry(dto) {
   const key = dto.key?.trim();
   if (!key || !/^[a-z0-9_.]+$/.test(key)) {
     badRequest("多语言 Key 仅支持小写字母、数字、下划线和点号");
+  }
+  if (state.translationsDraft == null) {
+    state.translationsDraft = deepClone(state.translationsPublished);
+    state.translationsDraftVersion = resolveDraftVersion(
+      state.translationsDraftVersion,
+      state.translationsPublishedVersion,
+    );
   }
   const current = state.translationsDraft[key] ?? {};
   const values = normalizeTranslationValues(dto.values ?? {}, current.values ?? {});
@@ -819,8 +947,13 @@ export function saveTranslationEntry(dto) {
 }
 
 export function publishTranslations() {
-  state.translationsPublished = deepClone(state.translationsDraft);
+  const draft = state.translationsDraft ?? state.translationsPublished;
+  state.translationsPublished = deepClone(draft);
   state.translationsPublishedAt = new Date().toISOString();
+  state.translationsPublishedVersion += 1;
+  state.translationsDraft = null;
+  state.translationsDraftUpdatedAt = null;
+  state.translationsDraftVersion = null;
   persist();
   return {
     count: Object.keys(state.translationsPublished).length,
@@ -829,8 +962,9 @@ export function publishTranslations() {
 }
 
 export function getAdminGameDeliveryConfig() {
+  const draft = state.gameDeliveryDraft ?? state.gameDeliveryPublished;
   return {
-    draft: normalizeGameDeliveryConfig(state.gameDeliveryDraft),
+    draft: normalizeGameDeliveryConfig(draft),
     published: normalizeGameDeliveryConfig(state.gameDeliveryPublished),
     meta: getGameDeliveryPublishMeta(),
   };
@@ -843,67 +977,86 @@ export function saveGameDeliveryDraft(dto) {
   if (!normalized.secretKey) badRequest("请填写加币密钥");
   state.gameDeliveryDraft = normalized;
   state.gameDeliveryDraftUpdatedAt = new Date().toISOString();
+  state.gameDeliveryDraftVersion = resolveDraftVersion(
+    state.gameDeliveryDraftVersion,
+    state.gameDeliveryPublishedVersion,
+  );
   persist();
   return { draft: state.gameDeliveryDraft, meta: getGameDeliveryPublishMeta() };
 }
 
 export function publishGameDelivery() {
-  state.gameDeliveryPublished = deepClone(normalizeGameDeliveryConfig(state.gameDeliveryDraft));
+  const draft = state.gameDeliveryDraft ?? state.gameDeliveryPublished;
+  state.gameDeliveryPublished = deepClone(normalizeGameDeliveryConfig(draft));
   state.gameDeliveryPublishedAt = new Date().toISOString();
+  state.gameDeliveryPublishedVersion += 1;
+  state.gameDeliveryDraft = null;
+  state.gameDeliveryDraftUpdatedAt = null;
+  state.gameDeliveryDraftVersion = null;
   persist();
   return { published: state.gameDeliveryPublished, meta: getGameDeliveryPublishMeta() };
 }
 
 export function getProducts() {
+  const products = state.productsDraft ?? state.productsPublished;
   return {
-    items: state.productsDraft.map((product) => toAdminProduct(product)),
+    items: products.map((product) => toAdminProduct(product)),
     meta: getProductsPublishMeta(),
   };
 }
 
 export function createProduct(dto) {
+  const products = ensureProductsDraft();
   const goodsId = dto.goodsId?.trim() || `goods-${Date.now()}`;
   const id = goodsId;
-  if (state.productsDraft.some((p) => p.id === id || p.goodsId === goodsId)) {
+  if (products.some((p) => p.id === id || p.goodsId === goodsId)) {
     badRequest("商品 ID / GoodsID 已存在");
   }
   const product = buildProductFromDto(id, goodsId, dto);
-  state.productsDraft.push(product);
+  products.push(product);
   state.productsDraftUpdatedAt = new Date().toISOString();
   persist();
   return toAdminProduct(product);
 }
 
 export function updateProduct(id, dto) {
-  const index = state.productsDraft.findIndex((p) => p.id === id);
+  const products = ensureProductsDraft();
+  const index = products.findIndex((p) => p.id === id);
   if (index < 0) badRequest("商品不存在");
-  const current = state.productsDraft[index];
+  const current = products[index];
   const goodsId = dto.goodsId?.trim() || current.goodsId;
   if (
-    state.productsDraft.some(
+    products.some(
       (p) => p.id !== id && (p.goodsId === goodsId || p.id === goodsId),
     )
   ) {
     badRequest("GoodsID 已被其他商品使用");
   }
-  state.productsDraft[index] = buildProductFromDto(id, goodsId, dto);
+  products[index] = buildProductFromDto(id, goodsId, dto);
   state.productsDraftUpdatedAt = new Date().toISOString();
   persist();
-  return toAdminProduct(state.productsDraft[index]);
+  return toAdminProduct(products[index]);
 }
 
 export function deleteProduct(id) {
-  const index = state.productsDraft.findIndex((p) => p.id === id);
+  const products = ensureProductsDraft();
+  const index = products.findIndex((p) => p.id === id);
   if (index < 0) badRequest("商品不存在");
-  const [removed] = state.productsDraft.splice(index, 1);
+  const [removed] = products.splice(index, 1);
   state.productsDraftUpdatedAt = new Date().toISOString();
   persist();
   return { ok: true, id: removed.id };
 }
 
 export function publishProducts() {
-  state.productsPublished = deepClone(state.productsDraft);
+  const draft = state.productsDraft ?? state.productsPublished;
+  state.productsPublished = deepClone(draft);
+  state.consumerProducts = deepClone(state.productsPublished);
   state.productsPublishedAt = new Date().toISOString();
+  state.productsPublishedVersion += 1;
+  state.productsDraft = null;
+  state.productsDraftUpdatedAt = null;
+  state.productsDraftVersion = null;
   persist();
   return { count: state.productsPublished.length, meta: getProductsPublishMeta() };
 }
@@ -917,8 +1070,9 @@ export function getGameGoodsCatalog() {
 }
 
 export function getAdminProductCategories() {
+  const categories = state.productCategoriesDraft ?? state.productCategoriesPublished;
   return {
-    items: [...state.productCategoriesDraft]
+    items: [...categories]
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map(({ enabled, ...item }) => item),
     meta: getProductCategoriesPublishMeta(),
@@ -937,17 +1091,25 @@ export function saveProductCategoriesDraft(items) {
     ids.add(id);
     if (!item.label?.trim()) badRequest(`请填写类型名称：${id}`);
   }
+  ensureProductCategoriesDraft();
   state.productCategoriesDraft = items.map((item, index) => ({
     id: item.id.trim(),
     label: item.label.trim(),
     sortOrder: item.sortOrder ?? index * 10,
   }));
+  state.productCategoriesDraftUpdatedAt = new Date().toISOString();
   persist();
   return { ok: true, count: state.productCategoriesDraft.length };
 }
 
 export function publishProductCategories() {
-  state.productCategoriesPublished = deepClone(state.productCategoriesDraft);
+  const draft = state.productCategoriesDraft ?? state.productCategoriesPublished;
+  state.productCategoriesPublished = deepClone(draft);
+  state.productCategoriesPublishedAt = new Date().toISOString();
+  state.productCategoriesPublishedVersion += 1;
+  state.productCategoriesDraft = null;
+  state.productCategoriesDraftUpdatedAt = null;
+  state.productCategoriesDraftVersion = null;
   persist();
   return {
     ok: true,

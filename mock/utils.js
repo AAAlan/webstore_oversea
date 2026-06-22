@@ -13,11 +13,24 @@ export function hasStructuralChanges(draft, published) {
   return JSON.stringify(draft) !== JSON.stringify(published);
 }
 
-export function buildPublishMeta(draft, published, draftUpdatedAt, publishedAt) {
+export function buildPublishMeta(
+  draft,
+  published,
+  draftUpdatedAt,
+  publishedAt,
+  draftVersion = null,
+  publishedVersion = 1,
+) {
+  const hasDraft = draft != null;
+  const versionDiffers = hasDraft && draftVersion !== publishedVersion;
+  const contentDiffers = hasDraft && hasStructuralChanges(draft, published);
   return {
-    hasUnpublishedChanges: hasStructuralChanges(draft, published),
+    hasDraft,
+    hasUnpublishedChanges: versionDiffers || contentDiffers,
     draftUpdatedAt,
     publishedAt,
+    draftVersion,
+    publishedVersion,
   };
 }
 

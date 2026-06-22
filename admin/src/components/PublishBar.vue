@@ -17,6 +17,7 @@ const hasChanges = computed(() => props.meta?.hasUnpublishedChanges);
 const statusText = computed(() => {
   if (!props.meta) return "";
   if (hasChanges.value) return "草稿已修改，尚未发布";
+  if (!props.meta.hasDraft) return "当前使用线上版本";
   return "草稿与发布版一致";
 });
 
@@ -33,7 +34,7 @@ function formatTime(iso) {
       <span class="publish-bar-label">{{ moduleLabel }}</span>
       <span class="publish-bar-desc">{{ statusText }}</span>
       <span v-if="meta" class="publish-bar-times">
-        草稿 {{ formatTime(meta.draftUpdatedAt) }} · 发布 {{ formatTime(meta.publishedAt) }}
+        草稿 {{ meta.hasDraft ? formatTime(meta.draftUpdatedAt) : "—" }} · 发布 {{ formatTime(meta.publishedAt) }}
       </span>
     </div>
     <div class="publish-bar-actions">
