@@ -295,12 +295,12 @@ function resolveRewardDesc(product, soldOut) {
   return null;
 }
 
-function resolveOriginalPrice(product) {
-  if (product.originalPrice != null && product.originalPrice > product.price) {
-    return product.originalPrice;
+function resolveOriginalPrice(product, pricing = product) {
+  if (pricing.originalPrice != null && pricing.originalPrice > pricing.price) {
+    return pricing.originalPrice;
   }
   if (product.firstBonus && product.category === "gem") {
-    return Number((product.price * 2).toFixed(2));
+    return Number((pricing.price * 2).toFixed(2));
   }
   return null;
 }
@@ -312,7 +312,8 @@ function isProductTimeExpired(product) {
   return false;
 }
 
-function toMallProduct(accountId, roleId, product) {
+function toMallProduct(accountId, roleId, product, countryCode = getAccountCountryCode(accountId)) {
+  const pricing = resolveProductPricing(product, countryCode);
   const timeExpired = isProductTimeExpired(product);
   const purchased = getPurchasedCount(accountId, roleId, product);
   const remaining = getRemaining(accountId, roleId, product);
@@ -331,8 +332,13 @@ function toMallProduct(accountId, roleId, product) {
     goodsId: product.goodsId,
     name: product.name,
     category: product.category,
-    currency: product.currency,
-    price: product.price,
+    currency: pricing.currency,
+    price: pricing.price,
+    defaultCurrency: product.currency,
+    defaultPrice: product.price,
+    pricingCountryCode: pricing.countryCode,
+    pricingIsDefault: pricing.isDefault,
+    countryPrices: product.countryPrices ?? [],
     firstBonus: product.firstBonus,
     description: product.description,
     image: product.image,
@@ -344,7 +350,7 @@ function toMallProduct(accountId, roleId, product) {
     limitInfo: resolveLimitInfo(product, remaining, soldOut),
     displayName: resolveDisplayName(product),
     rewardDesc: resolveRewardDesc(product, soldOut),
-    originalPrice: resolveOriginalPrice(product),
+    originalPrice: resolveOriginalPrice(product, pricing),
     limitMax: product.limitMax,
     limitPeriod: product.limitPeriod,
     limitSyncWithGame: product.limitSyncWithGame,
@@ -381,6 +387,8 @@ function toOrderResponse(orderId) {
     product: order.product,
     quantity: order.quantity,
     amount: order.amount,
+    currency: order.currency ?? order.product.currency,
+    pricingCountryCode: order.pricingCountryCode ?? order.product.pricingCountryCode,
     status: order.status,
     payChannel: order.payChannel ?? null,
     createdAt: order.createdAt,
@@ -474,6 +482,55 @@ function normalizeTranslationValues(input = {}, fallback = {}) {
   return values;
 }
 
+function normalizeCountryPrices(input = []) {
+  return (Array.isArray(input) ? input : [])
+    .map((item) => {
+      const countryCode = String(item.countryCode ?? "").trim().toUpperCase();
+      const currency = String(item.currency ?? "").trim().toUpperCase();
+      const price = Number(item.price);
+      const originalPrice =
+        item.originalPrice === "" || item.originalPrice == null
+          ? null
+          : Number(item.originalPrice);
+      return {
+        countryCode,
+        currency,
+        price,
+        originalPrice: Number.isFinite(originalPrice) ? originalPrice : null,
+      };
+    })
+    .filter(
+      (item) =>
+        /^[A-Z]{2}$/.test(item.countryCode) &&
+        /^[A-Z]{3}$/.test(item.currency) &&
+        Number.isFinite(item.price) &&
+        item.price >= 0,
+    );
+}
+
+function getAccountCountryCode(accountId) {
+  return getRechargeLimit(accountId).country ?? "US";
+}
+
+function resolveProductPricing(product, countryCode) {
+  const normalizedCountryCode = String(countryCode ?? "").trim().toUpperCase();
+  const matched = normalizeCountryPrices(product.countryPrices).find(
+    (item) => item.countryCode === normalizedCountryCode,
+  );
+  const fallback = {
+    countryCode: "DEFAULT",
+    currency: product.currency ?? "USD",
+    price: Number(product.price ?? 0),
+    originalPrice: product.originalPrice ?? null,
+    isDefault: true,
+  };
+  if (!matched) return fallback;
+  return {
+    ...matched,
+    isDefault: false,
+  };
+}
+
 function buildProductFromDto(id, goodsId, dto) {
   return {
     id,
@@ -481,9 +538,10 @@ function buildProductFromDto(id, goodsId, dto) {
     enabled: dto.enabled,
     name: dto.name,
     category: dto.category,
-    currency: dto.currency ?? "CNY",
+    currency: dto.currency ?? "USD",
     price: dto.price,
     originalPrice: dto.originalPrice ?? null,
+    countryPrices: normalizeCountryPrices(dto.countryPrices),
     discountLabel: dto.discountLabel ?? null,
     firstBonus: dto.firstBonus,
     description: dto.description,
@@ -567,10 +625,11 @@ export function getMall(accountId, roleId) {
     return { storeUnlocked: false, role, products: [] };
   }
 
+  const accountCountryCode = getAccountCountryCode(accountId.trim());
   const products = state.consumerProducts
     .filter((product) => product.enabled)
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((product) => toMallProduct(accountId.trim(), roleId, product));
+    .map((product) => toMallProduct(accountId.trim(), roleId, product, accountCountryCode));
 
   const rechargeLimit = getRechargeLimit(accountId.trim());
   const productsWithAgeLimit = products.map((product) => {
@@ -609,7 +668,8 @@ export function createOrder(dto) {
   if (!product) badRequest("商品不存在");
   if (!product.enabled) badRequest("商品已下架");
 
-  const mallProduct = toMallProduct(dto.accountId.trim(), dto.roleId, product);
+  const accountCountryCode = getAccountCountryCode(dto.accountId.trim());
+  const mallProduct = toMallProduct(dto.accountId.trim(), dto.roleId, product, accountCountryCode);
   const quantity = Math.max(1, Math.min(dto.quantity ?? 1, 99));
   const remaining = mallProduct.remaining;
 
@@ -618,7 +678,7 @@ export function createOrder(dto) {
   }
 
   const orderId = `LE${Date.now()}`;
-  const amount = Number((product.price * quantity).toFixed(2));
+  const amount = Number((mallProduct.price * quantity).toFixed(2));
   assertRechargeAllowed(dto.accountId, amount);
 
   state.orders[orderId] = {
@@ -631,7 +691,16 @@ export function createOrder(dto) {
     status: "pending",
     createdAt: new Date().toISOString(),
     role,
-    product,
+    product: {
+      ...product,
+      currency: mallProduct.currency,
+      price: mallProduct.price,
+      originalPrice: mallProduct.originalPrice,
+      pricingCountryCode: mallProduct.pricingCountryCode,
+      pricingIsDefault: mallProduct.pricingIsDefault,
+    },
+    currency: mallProduct.currency,
+    pricingCountryCode: mallProduct.pricingCountryCode,
   };
   persist();
 

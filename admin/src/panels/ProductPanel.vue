@@ -28,9 +28,13 @@ function emptyProductForm() {
     enabled: true,
     name: "",
     category: defaultCategory,
-    currency: "CNY",
+    currency: "USD",
     price: 6,
     originalPrice: "",
+    countryPrices: [
+      { id: genPriceId(), countryCode: "JP", currency: "JPY", price: 120, originalPrice: "" },
+      { id: genPriceId(), countryCode: "US", currency: "USD", price: 6, originalPrice: "" },
+    ],
     firstBonus: false,
     description: "",
     image: "📦",
@@ -45,6 +49,10 @@ function emptyProductForm() {
   };
 }
 
+function genPriceId() {
+  return `price-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+}
+
 const productForm = reactive(emptyProductForm());
 const autosave = useAutosave({
   watchSource: productForm,
@@ -55,11 +63,13 @@ const autosave = useAutosave({
 });
 
 const currencyOptions = [
-  { value: "CNY", label: "CNY 人民币" },
   { value: "USD", label: "USD 美元" },
+  { value: "JPY", label: "JPY 日元" },
+  { value: "CNY", label: "CNY 人民币" },
   { value: "HKD", label: "HKD 港币" },
   { value: "TWD", label: "TWD 新台币" },
-  { value: "JPY", label: "JPY 日元" },
+  { value: "KRW", label: "KRW 韩元" },
+  { value: "EUR", label: "EUR 欧元" },
 ];
 
 const limitPeriodLabels = {
@@ -90,6 +100,30 @@ const usedGoodsIds = computed(() =>
 const selectableGameGoods = computed(() =>
   gameGoodsCatalog.value.filter((g) => !usedGoodsIds.value.has(g.goodsId)),
 );
+
+function normalizeCountryPriceRows(items = []) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    id: item.id || genPriceId(),
+    countryCode: String(item.countryCode ?? "").trim().toUpperCase(),
+    currency: String(item.currency ?? "USD").trim().toUpperCase(),
+    price: Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+    originalPrice: item.originalPrice == null ? "" : item.originalPrice,
+  }));
+}
+
+function addCountryPriceRow() {
+  productForm.countryPrices.push({
+    id: genPriceId(),
+    countryCode: "",
+    currency: productForm.currency || "USD",
+    price: productForm.price || 0,
+    originalPrice: "",
+  });
+}
+
+function removeCountryPriceRow(id) {
+  productForm.countryPrices = productForm.countryPrices.filter((row) => row.id !== id);
+}
 
 async function loadCategories() {
   try {
@@ -186,9 +220,10 @@ function fillProductForm(product) {
     enabled: product.enabled,
     name: product.name,
     category: product.category,
-    currency: product.currency || "CNY",
+    currency: product.currency || "USD",
     price: product.price,
     originalPrice: product.originalPrice ?? "",
+    countryPrices: normalizeCountryPriceRows(product.countryPrices),
     firstBonus: product.firstBonus,
     description: product.description,
     image: product.image,
@@ -257,8 +292,25 @@ function buildPayload() {
     enabled: productForm.enabled,
     name: productForm.name.trim(),
     category: productForm.category,
-    currency: productForm.currency || "CNY",
+    currency: productForm.currency || "USD",
     price: Number(productForm.price),
+    countryPrices: productForm.countryPrices
+      .map((row) => ({
+        countryCode: String(row.countryCode ?? "").trim().toUpperCase(),
+        currency: String(row.currency ?? "").trim().toUpperCase(),
+        price: Number(row.price),
+        originalPrice:
+          row.originalPrice === "" || row.originalPrice == null
+            ? null
+            : Number(row.originalPrice),
+      }))
+      .filter(
+        (row) =>
+          row.countryCode &&
+          row.currency &&
+          Number.isFinite(row.price) &&
+          row.price >= 0,
+      ),
     firstBonus: productForm.firstBonus,
     description: productForm.description.trim(),
     image: productForm.image.trim() || "📦",
@@ -547,12 +599,12 @@ defineExpose({
           <section class="form-section">
             <header class="form-section__head">
               <h4 class="form-section__title">3. 定价</h4>
-              <p class="form-section__hint">国内默认人民币（CNY）。划线价用于促销展示，不填则仅展示售价。</p>
+              <p class="form-section__hint">默认币种用于未命中 country code 的用户；国家定价命中后，C 端按用户 IP 对应 country code 展示该币种和价格。</p>
             </header>
             <div class="form-section__body">
               <div class="form-grid">
                 <div class="field">
-                  <label>币种</label>
+                  <label>默认币种</label>
                   <select v-model="productForm.currency" :disabled="viewOnly">
                     <option
                       v-for="opt in currencyOptions"
@@ -564,11 +616,11 @@ defineExpose({
                   </select>
                 </div>
                 <div class="field">
-                  <label>售价</label>
+                  <label>默认售价</label>
                   <input v-model.number="productForm.price" type="number" min="0" step="0.01" :disabled="viewOnly" />
                 </div>
                 <div class="field">
-                  <label>划线原价</label>
+                  <label>默认划线原价</label>
                   <input
                     v-model="productForm.originalPrice"
                     type="number"
@@ -584,6 +636,45 @@ defineExpose({
                     <option :value="true">开启</option>
                     <option :value="false">关闭</option>
                   </select>
+                </div>
+                <div class="field field--full">
+                  <div class="footer-field-list">
+                    <div class="footer-field-head">
+                      <span>国家 / 地区定价</span>
+                      <button class="btn btn--ghost btn--sm" type="button" :disabled="viewOnly" @click="addCountryPriceRow">
+                        添加国家定价
+                      </button>
+                    </div>
+                    <div
+                      v-for="row in productForm.countryPrices"
+                      :key="row.id"
+                      class="footer-field-row price-rule-row"
+                    >
+                      <label class="footer-field-row__label">Country Code</label>
+                      <div class="footer-field-row__value price-rule-grid">
+                        <input
+                          v-model="row.countryCode"
+                          maxlength="2"
+                          placeholder="JP"
+                          :disabled="viewOnly"
+                          @blur="row.countryCode = row.countryCode.trim().toUpperCase()"
+                        />
+                        <select v-model="row.currency" :disabled="viewOnly">
+                          <option v-for="opt in currencyOptions" :key="opt.value" :value="opt.value">
+                            {{ opt.value }}
+                          </option>
+                        </select>
+                        <input v-model.number="row.price" type="number" min="0" step="0.01" placeholder="售价" :disabled="viewOnly" />
+                        <input v-model="row.originalPrice" type="number" min="0" step="0.01" placeholder="划线价，可空" :disabled="viewOnly" />
+                      </div>
+                      <div class="footer-field-row__actions">
+                        <button class="link-button" type="button" :disabled="viewOnly" @click="removeCountryPriceRow(row.id)">
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <span class="field-hint">例：JP + JPY 用于日本 IP；US + USD 用于美国 IP；未配置的 country code 使用默认币种和默认售价。</span>
                 </div>
               </div>
             </div>

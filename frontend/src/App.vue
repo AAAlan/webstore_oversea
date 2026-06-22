@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   REGION_DEMO_CODE,
+  REGION_DEMO_CA_DEFAULT,
   REGION_DEMO_JP_16_TO_20,
   REGION_DEMO_JP_ADULT,
   REGION_DEMO_JP_TEEN,
@@ -699,6 +700,19 @@ function openFooterLink(url) {
   }
 }
 
+function formatMoney(amount, currency = "USD") {
+  const normalizedCurrency = currency || "USD";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: normalizedCurrency,
+      currencyDisplay: "narrowSymbol",
+    }).format(amount ?? 0);
+  } catch {
+    return `${normalizedCurrency} ${(amount ?? 0).toFixed(2)}`;
+  }
+}
+
 function openBanner(banner) {
   if (banner?.linkUrl) {
     window.open(banner.linkUrl, "_blank", "noopener,noreferrer");
@@ -771,6 +785,7 @@ const showKonbiniPage = ref(false);
 const payResultStatus = ref("success");
 const payResultOrderId = ref("");
 const payResultAmount = ref(0);
+const payResultCurrency = ref("USD");
 const payResultFailMessage = ref("");
 
 const selectedProduct = ref(null);
@@ -810,29 +825,30 @@ const defaultMockRoles = [
 const activeCategory = ref("all");
 const productCategories = ref([]);
 const mockProducts = ref([
-  { id: "mock-pack-1", name: "宏景兵装组合包", category: "bundle", price: 6, note: "剩余可购买 1 / 1", tag: "", image: "🧰" },
-  { id: "mock-pack-2", name: "全面人才组合包", category: "bundle", price: 128, note: "剩余可购买 1 / 1", tag: "", image: "📦" },
-  { id: "mock-pack-3", name: "协议源能组合包", category: "bundle", price: 198, note: "剩余2天", tag: "剩余2天", image: "🔥" },
-  { id: "mock-pack-4", name: "人事支援组合包", category: "bundle", price: 98, note: "剩余可购买 1 / 1", tag: "", image: "🎫" },
-  { id: "mock-pass-1", name: "协议通行证·协议定制", category: "pass", price: 68, note: "共获得协议通行证奖励", tag: "", image: "🪪" },
-  { id: "monthly-card", name: "月卡", category: "monthly", price: 30, note: "剩余可购买 6 / 8", tag: "", image: "🗓️" },
+  { id: "mock-pack-1", name: "宏景兵装组合包", category: "bundle", currency: "USD", price: 6, note: "剩余可购买 1 / 1", tag: "", image: "🧰" },
+  { id: "mock-pack-2", name: "全面人才组合包", category: "bundle", currency: "USD", price: 128, note: "剩余可购买 1 / 1", tag: "", image: "📦" },
+  { id: "mock-pack-3", name: "协议源能组合包", category: "bundle", currency: "USD", price: 198, note: "剩余2天", tag: "剩余2天", image: "🔥" },
+  { id: "mock-pack-4", name: "人事支援组合包", category: "bundle", currency: "USD", price: 98, note: "剩余可购买 1 / 1", tag: "", image: "🎫" },
+  { id: "mock-pass-1", name: "协议通行证·协议定制", category: "pass", currency: "USD", price: 68, note: "共获得协议通行证奖励", tag: "", image: "🪪" },
+  { id: "monthly-card", name: "月卡", category: "monthly", currency: "USD", price: 30, note: "剩余可购买 6 / 8", tag: "", image: "🗓️" },
   {
     id: "gem-60",
     name: "开采-行质源石",
     category: "gem",
+    currency: "USD",
     price: 6,
     note: "共获得行质源石包×6",
     tag: "特派赠送",
     promoText: "购买共获得 6 颗行质源石（首充共获得 12 颗）。",
     image: "🟡",
   },
-  { id: "gem-300", name: "开采-一组行质源石", category: "gem", price: 30, note: "共获得行质源石包×24", tag: "双倍-限购1次", image: "🟡" },
-  { id: "gem-980", name: "开采-堆行质源石", category: "gem", price: 98, note: "共获得行质源石包×84", tag: "双倍-限购1次", image: "🟡" },
-  { id: "gem-1980", name: "开采-袋行质源石", category: "gem", price: 198, note: "共获得同质源石×170", tag: "双倍-限购1次", image: "🟡" },
-  { id: "gem-3280", name: "开采-盒行质源石", category: "gem", price: 328, note: "共获得同质源石×282", tag: "双倍-限购1次", image: "🟡" },
-  { id: "gem-6480", name: "开采-箱行质源石", category: "gem", price: 648, note: "共获得同质源石×560", tag: "双倍-限购1次", image: "🟡" },
-  { id: "mock-monthly-2", name: "每月素材组合包", category: "bundle", price: 30, note: "剩余可购买 1 / 1", tag: "剩余6天", image: "🧪" },
-  { id: "mock-monthly-3", name: "每月素材组合包", category: "bundle", price: 98, note: "剩余可购买 1 / 1", tag: "剩余28天", image: "🧴" },
+  { id: "gem-300", name: "开采-一组行质源石", category: "gem", currency: "USD", price: 30, note: "共获得行质源石包×24", tag: "双倍-限购1次", image: "🟡" },
+  { id: "gem-980", name: "开采-堆行质源石", category: "gem", currency: "USD", price: 98, note: "共获得行质源石包×84", tag: "双倍-限购1次", image: "🟡" },
+  { id: "gem-1980", name: "开采-袋行质源石", category: "gem", currency: "USD", price: 198, note: "共获得同质源石×170", tag: "双倍-限购1次", image: "🟡" },
+  { id: "gem-3280", name: "开采-盒行质源石", category: "gem", currency: "USD", price: 328, note: "共获得同质源石×282", tag: "双倍-限购1次", image: "🟡" },
+  { id: "gem-6480", name: "开采-箱行质源石", category: "gem", currency: "USD", price: 648, note: "共获得同质源石×560", tag: "双倍-限购1次", image: "🟡" },
+  { id: "mock-monthly-2", name: "每月素材组合包", category: "bundle", currency: "USD", price: 30, note: "剩余可购买 1 / 1", tag: "剩余6天", image: "🧪" },
+  { id: "mock-monthly-3", name: "每月素材组合包", category: "bundle", currency: "USD", price: 98, note: "剩余可购买 1 / 1", tag: "剩余28天", image: "🧴" },
 ]);
 
 const maskedAccount = computed(() => {
@@ -1028,7 +1044,8 @@ const detailTotalAmount = computed(() => {
   return selectedProduct.value.price * purchaseQty.value;
 });
 
-const cashierAmountLabel = computed(() => `$${detailTotalAmount.value.toFixed(2)}`);
+const selectedCurrency = computed(() => selectedProduct.value?.currency || "USD");
+const cashierAmountLabel = computed(() => formatMoney(detailTotalAmount.value, selectedCurrency.value));
 
 const pcPaymentMethods = computed(() => [
   {
@@ -1365,6 +1382,11 @@ async function loginWithUsTeenDemo() {
   await submitLogin();
 }
 
+async function loginWithCaDefaultDemo() {
+  fillRegionDemoAccount(REGION_DEMO_CA_DEFAULT);
+  await submitLogin();
+}
+
 function openAgeLimitModal(message) {
   ageLimitModalMessage.value = message;
   showAgeLimitModal.value = true;
@@ -1436,6 +1458,7 @@ function openPayResultPage(status, orderData = null, failMessage = "") {
   payResultStatus.value = status;
   payResultOrderId.value = orderData?.orderId ?? payOrderNo.value;
   payResultAmount.value = orderData?.amount ?? detailTotalAmount.value;
+  payResultCurrency.value = orderData?.currency ?? orderData?.product?.currency ?? selectedCurrency.value;
   payResultFailMessage.value = failMessage;
   showCashier.value = false;
   showPaypalPage.value = false;
@@ -2263,6 +2286,11 @@ onBeforeUnmount(() => {
             <span class="login-demo-phone">{{ REGION_DEMO_US_TEEN }}</span>
             <span class="login-demo-desc">需经家长管控验证开通支付功能，未开通时点击充值跳转验证通知</span>
           </button>
+          <button class="login-demo-card" type="button" @click="loginWithCaDefaultDemo">
+            <span class="login-demo-badge">加拿大 · 默认币种</span>
+            <span class="login-demo-phone">{{ REGION_DEMO_CA_DEFAULT }}</span>
+            <span class="login-demo-desc">未配置 CA 国家定价时，商品展示默认币种和默认售价</span>
+          </button>
 
           <button class="login-demo-card banned" type="button" @click="loginWithBannedDemo">
             <span class="login-demo-badge banned">账号封禁</span>
@@ -2417,9 +2445,9 @@ onBeforeUnmount(() => {
                 >
                   <span v-if="product.soldOut" class="price-sold-out">{{ t("unavailable") }}</span>
                   <template v-else>
-                    <span class="price-current">￥{{ product.price.toFixed(2) }}</span>
+                    <span class="price-current">{{ formatMoney(product.price, product.currency) }}</span>
                     <span v-if="product.originalPrice" class="price-original">
-                      （￥{{ product.originalPrice.toFixed(2) }}）
+                      （{{ formatMoney(product.originalPrice, product.currency) }}）
                     </span>
                   </template>
                 </button>
@@ -2602,6 +2630,9 @@ onBeforeUnmount(() => {
           <button class="login-demo-chip age-limited" type="button" @click="fillRegionDemoAccount(REGION_DEMO_US_TEEN)">
             美国13-16 {{ REGION_DEMO_US_TEEN }}
           </button>
+          <button class="login-demo-chip" type="button" @click="fillRegionDemoAccount(REGION_DEMO_CA_DEFAULT)">
+            加拿大默认价 {{ REGION_DEMO_CA_DEFAULT }}
+          </button>
         </div>
 
         <div class="login-footer-links">
@@ -2694,7 +2725,7 @@ onBeforeUnmount(() => {
             <p v-if="selectedProduct.promoText" class="product-promo-text">
               {{ selectedProduct.promoText }}
             </p>
-            <p class="product-price">￥{{ selectedProduct.price.toFixed(2) }}</p>
+            <p class="product-price">{{ formatMoney(selectedProduct.price, selectedProduct.currency) }}</p>
           </div>
           <div class="product-qty">
             <div class="qty-stepper">
@@ -2731,7 +2762,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="detail-footer">
           <p class="total">
-            合计：<span>￥{{ detailTotalAmount.toFixed(2) }}</span>
+            合计：<span>{{ cashierAmountLabel }}</span>
           </p>
           <button
             class="pay-now-btn"
@@ -2977,7 +3008,7 @@ onBeforeUnmount(() => {
 
       <main class="pay-landing-main">
         <p class="pay-landing-product">{{ selectedProduct?.name }}</p>
-        <p class="pay-landing-amount">￥ {{ detailTotalAmount.toFixed(2) }}</p>
+        <p class="pay-landing-amount">{{ cashierAmountLabel }}</p>
         <p v-if="payChannel === 'alipay'" class="pay-landing-promo">🧧 首单随机立减，先到先得</p>
 
         <button class="pay-landing-open-app" type="button" @click="launchFromLanding">
@@ -3052,7 +3083,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="pay-result-row">
             <span class="label">支付金额</span>
-            <span class="value amount">￥{{ payResultAmount.toFixed(2) }}</span>
+            <span class="value amount">{{ formatMoney(payResultAmount, payResultCurrency) }}</span>
           </div>
           <div class="pay-result-row">
             <span class="label">支付方式</span>

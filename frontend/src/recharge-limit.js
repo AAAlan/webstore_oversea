@@ -3,6 +3,7 @@ export const REGION_DEMO_JP_TEEN = "15200000005";
 export const REGION_DEMO_JP_16_TO_20 = "15200000007";
 export const REGION_DEMO_US_TEEN = "15200000006";
 export const REGION_DEMO_US_CHILD = "15200000004";
+export const REGION_DEMO_CA_DEFAULT = "15200000008";
 export const REGION_DEMO_CODE = "1234";
 
 const DEMO_ACCOUNT_PROFILES = {
@@ -11,6 +12,7 @@ const DEMO_ACCOUNT_PROFILES = {
   [REGION_DEMO_JP_16_TO_20]: { age: 17, country: "JP" },
   [REGION_DEMO_US_TEEN]: { age: 14, country: "US", parentalVerified: false },
   [REGION_DEMO_US_CHILD]: { age: 12, country: "US", parentalVerified: false },
+  [REGION_DEMO_CA_DEFAULT]: { age: 25, country: "CA" },
   "15200000002": { age: 22, country: "JP" },
   "15200000003": { age: 22, country: "US" },
 };
@@ -24,6 +26,7 @@ const DEMO_MONTHLY_SPENT = {
 const COUNTRY_LABELS = {
   JP: "日本",
   US: "美国",
+  CA: "加拿大",
 };
 
 function buildPolicy(profile) {

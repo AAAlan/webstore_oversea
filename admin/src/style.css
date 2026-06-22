@@ -584,6 +584,17 @@ body {
   justify-content: flex-end;
 }
 
+.price-rule-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 0.9fr 1fr 1fr;
+  gap: 8px;
+}
+
+.price-rule-grid input,
+.price-rule-grid select {
+  width: 100%;
+}
+
 .readonly-field {
   background: #f4f6f9;
   color: var(--text-secondary);
@@ -711,6 +722,10 @@ body {
 
   .footer-field-row__actions {
     justify-content: flex-start;
+  }
+
+  .price-rule-grid {
+    grid-template-columns: 1fr;
   }
 }
 

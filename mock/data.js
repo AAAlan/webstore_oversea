@@ -246,9 +246,26 @@ export const DEFAULT_MALL_CONFIG = {
 };
 
 function p(partial) {
+  const countryPrices = [
+    {
+      countryCode: "JP",
+      currency: "JPY",
+      price: partial.jpPrice ?? Math.max(Math.round((partial.price ?? 0) * 20), 120),
+      originalPrice:
+        partial.originalPrice == null
+          ? null
+          : Math.max(Math.round(partial.originalPrice * 20), 120),
+    },
+    {
+      countryCode: "US",
+      currency: "USD",
+      price: partial.usPrice ?? partial.price ?? 0,
+      originalPrice: partial.originalPrice ?? null,
+    },
+  ];
   return {
     enabled: true,
-    currency: "CNY",
+    currency: "USD",
     limitSyncWithGame: true,
     sortOrder: 0,
     originalPrice: null,
@@ -256,7 +273,9 @@ function p(partial) {
     promoText: null,
     imageUrl: null,
     timeLimitEnd: null,
+    countryPrices,
     ...partial,
+    countryPrices: partial.countryPrices ?? countryPrices,
     goodsId: partial.goodsId ?? partial.id,
   };
 }
