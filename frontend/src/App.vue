@@ -1051,11 +1051,34 @@ const detailTotalAmount = computed(() => {
   if (!selectedProduct.value) {
     return 0;
   }
-  return selectedProduct.value.price * purchaseQty.value;
+  return selectedProduct.value.price * normalizePurchaseQty(purchaseQty.value);
 });
 
 const selectedCurrency = computed(() => selectedProduct.value?.currency || "USD");
 const cashierAmountLabel = computed(() => formatMoney(detailTotalAmount.value, selectedCurrency.value));
+
+function normalizePurchaseQty(value) {
+  const quantity = Math.floor(Number(value));
+  if (!Number.isFinite(quantity)) {
+    return 1;
+  }
+  return Math.min(Math.max(quantity, 1), maxPurchaseQty.value);
+}
+
+function setPurchaseQty(value) {
+  purchaseQty.value = normalizePurchaseQty(value);
+}
+
+function handlePurchaseQtyInput(event) {
+  const rawValue = event.target.value;
+  if (rawValue === "") {
+    purchaseQty.value = "";
+    return;
+  }
+  const nextValue = normalizePurchaseQty(rawValue);
+  purchaseQty.value = nextValue;
+  event.target.value = String(nextValue);
+}
 
 const pcPaymentMethods = computed(() => [
   {
@@ -1536,6 +1559,7 @@ async function processPaymentSuccess() {
   if (!selectedProduct.value) {
     return;
   }
+  setPurchaseQty(purchaseQty.value);
   creating.value = true;
   try {
     const data = await submitOrder(selectedProduct.value.id, purchaseQty.value);
@@ -1574,6 +1598,7 @@ async function notifyOrderPaidFromApp() {
 }
 
 async function createPendingPayOrder() {
+  setPurchaseQty(purchaseQty.value);
   const data = await submitOrder(
     selectedProduct.value.id,
     purchaseQty.value,
@@ -1734,13 +1759,13 @@ function closeProductDetail() {
 
 function increaseQty() {
   if (canIncreaseQty.value) {
-    purchaseQty.value += 1;
+    setPurchaseQty(purchaseQty.value + 1);
   }
 }
 
 function decreaseQty() {
   if (canDecreaseQty.value) {
-    purchaseQty.value -= 1;
+    setPurchaseQty(purchaseQty.value - 1);
   }
 }
 
@@ -2780,7 +2805,19 @@ onBeforeUnmount(() => {
               >
                 −
               </button>
-              <span class="qty-value">{{ purchaseQty }}</span>
+              <input
+                v-model.number="purchaseQty"
+                class="qty-value"
+                type="number"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                min="1"
+                :max="maxPurchaseQty"
+                aria-label="购买数量"
+                @input="handlePurchaseQtyInput"
+                @blur="setPurchaseQty(purchaseQty)"
+                @change="setPurchaseQty(purchaseQty)"
+              />
               <button
                 type="button"
                 class="qty-btn qty-plus"
