@@ -262,6 +262,15 @@ function p(partial) {
       price: partial.usPrice ?? partial.price ?? 0,
       originalPrice: partial.originalPrice ?? null,
     },
+    {
+      countryCode: "RU",
+      currency: "RUB",
+      price: partial.ruPrice ?? Math.max(Math.round((partial.price ?? 0) * 95), 99),
+      originalPrice:
+        partial.originalPrice == null
+          ? null
+          : Math.max(Math.round(partial.originalPrice * 95), 99),
+    },
   ];
   return {
     enabled: true,

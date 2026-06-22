@@ -34,6 +34,7 @@ function emptyProductForm() {
     countryPrices: [
       { id: genPriceId(), countryCode: "JP", currency: "JPY", price: 120, originalPrice: "" },
       { id: genPriceId(), countryCode: "US", currency: "USD", price: 6, originalPrice: "" },
+      { id: genPriceId(), countryCode: "RU", currency: "RUB", price: 570, originalPrice: "" },
     ],
     firstBonus: false,
     description: "",
@@ -65,11 +66,27 @@ const autosave = useAutosave({
 const currencyOptions = [
   { value: "USD", label: "USD 美元" },
   { value: "JPY", label: "JPY 日元" },
+  { value: "RUB", label: "RUB 俄罗斯卢布" },
   { value: "CNY", label: "CNY 人民币" },
   { value: "HKD", label: "HKD 港币" },
   { value: "TWD", label: "TWD 新台币" },
   { value: "KRW", label: "KRW 韩元" },
   { value: "EUR", label: "EUR 欧元" },
+];
+
+const countryCodeOptions = [
+  { value: "US", label: "US 美国" },
+  { value: "JP", label: "JP 日本" },
+  { value: "RU", label: "RU 俄罗斯" },
+  { value: "CA", label: "CA 加拿大" },
+  { value: "GB", label: "GB 英国" },
+  { value: "AU", label: "AU 澳大利亚" },
+  { value: "KR", label: "KR 韩国" },
+  { value: "TW", label: "TW 中国台湾" },
+  { value: "HK", label: "HK 中国香港" },
+  { value: "SG", label: "SG 新加坡" },
+  { value: "DE", label: "DE 德国" },
+  { value: "FR", label: "FR 法国" },
 ];
 
 const limitPeriodLabels = {
@@ -652,13 +669,12 @@ defineExpose({
                     >
                       <label class="footer-field-row__label">Country Code</label>
                       <div class="footer-field-row__value price-rule-grid">
-                        <input
-                          v-model="row.countryCode"
-                          maxlength="2"
-                          placeholder="JP"
-                          :disabled="viewOnly"
-                          @blur="row.countryCode = row.countryCode.trim().toUpperCase()"
-                        />
+                        <select v-model="row.countryCode" :disabled="viewOnly">
+                          <option value="">选择国家/地区</option>
+                          <option v-for="opt in countryCodeOptions" :key="opt.value" :value="opt.value">
+                            {{ opt.label }}
+                          </option>
+                        </select>
                         <select v-model="row.currency" :disabled="viewOnly">
                           <option v-for="opt in currencyOptions" :key="opt.value" :value="opt.value">
                             {{ opt.value }}

@@ -6,6 +6,7 @@ import {
   REGION_DEMO_JP_16_TO_20,
   REGION_DEMO_JP_ADULT,
   REGION_DEMO_JP_TEEN,
+  REGION_DEMO_RU_LOCKED_PRICE,
   REGION_DEMO_US_CHILD,
   REGION_DEMO_US_TEEN,
   applyAgeLimitToProduct,
@@ -805,6 +806,13 @@ const showPayToast = ref(false);
 const payToastLoading = ref(false);
 const cashierCardRef = ref(null);
 const konbiniExpireAt = ref("");
+const simulatedIpCountryCode = ref("US");
+const ipCountryOptions = [
+  { value: "US", label: "US / USD" },
+  { value: "JP", label: "JP / JPY" },
+  { value: "RU", label: "RU / RUB" },
+  { value: "CA", label: "CA / 默认价" },
+];
 const PAY_SESSION_KEY = "le_pay_session";
 let payToastTimer = null;
 
@@ -1251,7 +1259,11 @@ async function loadMall() {
   mallLoading.value = true;
   mallReady.value = false;
   try {
-    const data = await api.getMall(gameAccount.value, selectedRole.value);
+    const data = await api.getMall(
+      gameAccount.value,
+      selectedRole.value,
+      simulatedIpCountryCode.value,
+    );
     storeUnlocked.value = data.storeUnlocked;
     if (data.rechargeLimit) {
       rechargeLimit.value = data.rechargeLimit;
@@ -1387,6 +1399,11 @@ async function loginWithCaDefaultDemo() {
   await submitLogin();
 }
 
+async function loginWithRuLockedPriceDemo() {
+  fillRegionDemoAccount(REGION_DEMO_RU_LOCKED_PRICE);
+  await submitLogin();
+}
+
 function openAgeLimitModal(message) {
   ageLimitModalMessage.value = message;
   showAgeLimitModal.value = true;
@@ -1422,6 +1439,7 @@ async function submitOrder(productId, quantity = 1, pendingOnly = false) {
       productId,
       quantity,
       pendingOnly,
+      countryCode: simulatedIpCountryCode.value,
     });
   } catch (error) {
     const payload =
@@ -2132,6 +2150,12 @@ watch(selectedRole, () => {
   }
 });
 
+watch(simulatedIpCountryCode, () => {
+  if (isLoggedIn.value && !accountBanned.value && selectedRole.value && !showRoleSelector.value) {
+    loadMall();
+  }
+});
+
 watch(showCashier, async (visible) => {
   if (!visible) {
     return;
@@ -2291,6 +2315,11 @@ onBeforeUnmount(() => {
             <span class="login-demo-phone">{{ REGION_DEMO_CA_DEFAULT }}</span>
             <span class="login-demo-desc">未配置 CA 国家定价时，商品展示默认币种和默认售价</span>
           </button>
+          <button class="login-demo-card age-limited" type="button" @click="loginWithRuLockedPriceDemo">
+            <span class="login-demo-badge age-limited">俄罗斯 · 注册地锁定</span>
+            <span class="login-demo-phone">{{ REGION_DEMO_RU_LOCKED_PRICE }}</span>
+            <span class="login-demo-desc">不受模拟 IP / VPN 影响，商品始终展示 RUB 定价</span>
+          </button>
 
           <button class="login-demo-card banned" type="button" @click="loginWithBannedDemo">
             <span class="login-demo-badge banned">账号封禁</span>
@@ -2315,6 +2344,14 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="role-actions">
+              <label class="ip-country-control">
+                <span>模拟 IP</span>
+                <select v-model="simulatedIpCountryCode">
+                  <option v-for="option in ipCountryOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </label>
               <button class="switch-account-btn" type="button" @click="openRoleSelector">{{ t("switchRole") }}</button>
             </div>
           </div>
@@ -2632,6 +2669,9 @@ onBeforeUnmount(() => {
           </button>
           <button class="login-demo-chip" type="button" @click="fillRegionDemoAccount(REGION_DEMO_CA_DEFAULT)">
             加拿大默认价 {{ REGION_DEMO_CA_DEFAULT }}
+          </button>
+          <button class="login-demo-chip age-limited" type="button" @click="fillRegionDemoAccount(REGION_DEMO_RU_LOCKED_PRICE)">
+            俄罗斯RUB {{ REGION_DEMO_RU_LOCKED_PRICE }}
           </button>
         </div>
 

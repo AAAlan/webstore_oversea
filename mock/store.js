@@ -312,7 +312,7 @@ function isProductTimeExpired(product) {
   return false;
 }
 
-function toMallProduct(accountId, roleId, product, countryCode = getAccountCountryCode(accountId)) {
+function toMallProduct(accountId, roleId, product, countryCode = resolvePricingCountryCode(accountId)) {
   const pricing = resolveProductPricing(product, countryCode);
   const timeExpired = isProductTimeExpired(product);
   const purchased = getPurchasedCount(accountId, roleId, product);
@@ -508,8 +508,12 @@ function normalizeCountryPrices(input = []) {
     );
 }
 
-function getAccountCountryCode(accountId) {
-  return getRechargeLimit(accountId).country ?? "US";
+function resolvePricingCountryCode(accountId, ipCountryCode = "") {
+  const registeredCountry = getRechargeLimit(accountId).country ?? "US";
+  if (registeredCountry === "RU") {
+    return "RU";
+  }
+  return String(ipCountryCode ?? "").trim().toUpperCase() || registeredCountry;
 }
 
 function resolveProductPricing(product, countryCode) {
@@ -615,7 +619,7 @@ export function getProductCategories() {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export function getMall(accountId, roleId) {
+export function getMall(accountId, roleId, ipCountryCode = "") {
   assertAccountNotBanned(accountId);
   const role = state.roles.find((item) => item.id === roleId);
   if (!role) badRequest("角色不存在");
@@ -625,7 +629,7 @@ export function getMall(accountId, roleId) {
     return { storeUnlocked: false, role, products: [] };
   }
 
-  const accountCountryCode = getAccountCountryCode(accountId.trim());
+  const accountCountryCode = resolvePricingCountryCode(accountId.trim(), ipCountryCode);
   const products = state.consumerProducts
     .filter((product) => product.enabled)
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -668,7 +672,7 @@ export function createOrder(dto) {
   if (!product) badRequest("商品不存在");
   if (!product.enabled) badRequest("商品已下架");
 
-  const accountCountryCode = getAccountCountryCode(dto.accountId.trim());
+  const accountCountryCode = resolvePricingCountryCode(dto.accountId.trim(), dto.countryCode);
   const mallProduct = toMallProduct(dto.accountId.trim(), dto.roleId, product, accountCountryCode);
   const quantity = Math.max(1, Math.min(dto.quantity ?? 1, 99));
   const remaining = mallProduct.remaining;

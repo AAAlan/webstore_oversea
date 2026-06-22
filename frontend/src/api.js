@@ -14,7 +14,8 @@ export const api = {
   getProductCategories: () => call(() => consumerApi.getProductCategories()),
   getRoles: () => call(() => consumerApi.getRoles()),
   getAccountStatus: (accountId) => call(() => consumerApi.getAccountStatus(accountId)),
-  getMall: (accountId, roleId) => call(() => consumerApi.getMall(accountId, roleId)),
+  getMall: (accountId, roleId, countryCode) =>
+    call(() => consumerApi.getMall(accountId, roleId, countryCode)),
   createOrder: (body) => call(() => consumerApi.createOrder(body)),
   getOrderPaymentStatus: (orderId, accountId) =>
     call(() => consumerApi.getOrderPaymentStatus(orderId, accountId)),

@@ -24,7 +24,8 @@ export const consumerApi = {
   getProductCategories: () => run(() => store.getProductCategories()),
   getRoles: () => run(() => store.getRoles()),
   getAccountStatus: (accountId) => run(() => store.getAccountStatus(accountId)),
-  getMall: (accountId, roleId) => run(() => store.getMall(accountId, roleId)),
+  getMall: (accountId, roleId, countryCode) =>
+    run(() => store.getMall(accountId, roleId, countryCode)),
   createOrder: (body) => run(() => store.createOrder(body)),
   getOrderPaymentStatus: (orderId, accountId) =>
     run(() => store.getOrderPaymentStatus(orderId, accountId)),
