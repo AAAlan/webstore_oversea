@@ -6,7 +6,6 @@ import ContentPanel from "./panels/ContentPanel.vue";
 import GameDeliveryPanel from "./panels/GameDeliveryPanel.vue";
 import ProductPanel from "./panels/ProductPanel.vue";
 import ProductTypePanel from "./panels/ProductTypePanel.vue";
-import TranslationPanel from "./panels/TranslationPanel.vue";
 
 const loggedIn = ref(!!getAdminToken());
 const loginToken = ref(getAdminToken());
@@ -18,7 +17,6 @@ const contentPanelRef = ref(null);
 const productPanelRef = ref(null);
 const productTypePanelRef = ref(null);
 const gameDeliveryPanelRef = ref(null);
-const translationPanelRef = ref(null);
 const publishStatus = ref(null);
 const adminRole = computed(() => getAdminRole());
 
@@ -26,7 +24,6 @@ const mainNavItems = [
   { id: "content", label: "页面内容管理", icon: "◫" },
   { id: "products", label: "商品管理", icon: "▣" },
   { id: "gameDelivery", label: "游戏发货配置", icon: "↗" },
-  { id: "translations", label: "多语言管理", icon: "◎" },
 ];
 
 function showToast(type, text) {
@@ -70,9 +67,6 @@ async function loadTabData() {
         productTypePanelRef.value?.load?.(),
         productPanelRef.value?.load?.(),
       ]);
-    } else if (activeTab.value === "translations") {
-      await nextTick();
-      await translationPanelRef.value?.load?.();
     } else if (activeTab.value === "gameDelivery") {
       await nextTick();
       await gameDeliveryPanelRef.value?.load?.();
@@ -157,7 +151,6 @@ const activeAutosaveState = computed(() => {
 });
 
 const topbarStatusText = computed(() => {
-  if (activeTab.value === "translations") return "";
   const state = activeAutosaveState.value;
   if (state === "saving") return "保存中";
   if (state === "dirty") return "未保存";
@@ -166,7 +159,6 @@ const topbarStatusText = computed(() => {
 });
 
 const topbarStatusClass = computed(() => {
-  if (activeTab.value === "translations") return "";
   const state = activeAutosaveState.value;
   if (state === "saving") return "saving";
   if (state === "dirty") return "pending";
@@ -265,10 +257,6 @@ onMounted(() => {
             v-if="tab.id === 'gameDelivery' && publishStatus?.gameDelivery?.hasUnpublishedChanges"
             class="nav-dot"
           />
-          <span
-            v-if="tab.id === 'translations' && publishStatus?.translations?.hasUnpublishedChanges"
-            class="nav-dot"
-          />
         </button>
       </div>
 
@@ -284,7 +272,7 @@ onMounted(() => {
         <div class="topbar-breadcrumb">
           充值商城 / <strong>{{ pageTitle }}</strong>
         </div>
-        <div v-if="activeTab !== 'translations'" class="topbar-status">
+        <div class="topbar-status">
           <span class="dot" :class="topbarStatusClass" />
           {{ topbarStatusText }}
         </div>
@@ -327,15 +315,6 @@ onMounted(() => {
         <GameDeliveryPanel
           v-if="activeTab === 'gameDelivery' && adminRole === 'admin'"
           ref="gameDeliveryPanelRef"
-          :loading="loading"
-          @toast="showToast"
-          @loading="setLoading"
-          @status-change="refreshPublishStatus"
-        />
-
-        <TranslationPanel
-          v-if="activeTab === 'translations'"
-          ref="translationPanelRef"
           :loading="loading"
           @toast="showToast"
           @loading="setLoading"
