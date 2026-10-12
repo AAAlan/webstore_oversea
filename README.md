@@ -71,3 +71,9 @@ demo 预览环境下：
 
 - 这是前端演示项目，页面数据、支付流程、语言配置等均为 Mock 实现。
 - `build:admin` 会把管理后台打到 `/admin/` 路径下，方便与 C 端同域预览。
+
+## 项目文档
+
+- [C 端充值商城 PRD](docs/frontend-mall-prd.md)
+- [管理后台 PRD](docs/admin-prd.md)
+- [商城支付与发货时序图](docs/payment-fulfillment-sequence.md)
