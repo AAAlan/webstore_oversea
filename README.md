@@ -77,4 +77,4 @@ demo 预览环境下：
 - [C 端充值商城 PRD](docs/frontend-mall-prd.md)
 - [管理后台 PRD](docs/admin-prd.md)
 - [商城支付与发货时序图](docs/payment-fulfillment-sequence.md)
-- [商城 countryCode 全链路一致性需求与时序图](docs/country-code-consistency.md)
+- [商城购买国家一致性 PRD（countryCode）](docs/country-code-consistency.md)
